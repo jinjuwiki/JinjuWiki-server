@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: JinjuWiki
+  datasource:
+    url: jdbc:postgresql://localhost:5432/jinjuwiki
+    username: jinjuwiki
+    password: jinjuwiki
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+logging:
+  level:
+    org.hibernate.SQL: debug
