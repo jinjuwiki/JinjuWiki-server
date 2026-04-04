@@ -17,16 +17,15 @@ public class CategoryInitializer {
     @Bean
     public CommandLineRunner initCategories() {
         return args -> {
-            if (categoryRepository.count() > 0) {
-                return;
-            }
-
             List<String> defaultCategories = List.of("학교", "공부", "생활", "입시", "기타");
             List<Category> categories = defaultCategories.stream()
+                    .filter(name -> !categoryRepository.existsByName(name))
                     .map(name -> Category.builder().name(name).build())
                     .toList();
 
-            categoryRepository.saveAll(categories);
+            if (!categories.isEmpty()) {
+                categoryRepository.saveAll(categories);
+            }
         };
     }
 }
