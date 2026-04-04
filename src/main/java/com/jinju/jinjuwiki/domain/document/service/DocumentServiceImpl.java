@@ -6,6 +6,7 @@ import com.jinju.jinjuwiki.domain.document.dto.DocumentCreateRequest;
 import com.jinju.jinjuwiki.domain.document.dto.DocumentCreateResponse;
 import com.jinju.jinjuwiki.domain.document.dto.DocumentDetailResponse;
 import com.jinju.jinjuwiki.domain.document.dto.DocumentSummaryResponse;
+import com.jinju.jinjuwiki.domain.document.dto.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.user.entity.User;
@@ -66,6 +67,38 @@ public class DocumentServiceImpl implements DocumentService {
                 : documentRepository.findByCategoryIdOrderByCreatedAtDesc(categoryId, pageable);
 
         return PageResponse.from(documents.map(this::toSummaryResponse));
+    }
+
+    @Override
+    @Transactional
+    public DocumentDetailResponse updateDocument(Long documentId, DocumentUpdateRequest request) {
+        Document document = getDocumentEntity(documentId);
+        validateDocumentAuthor(document, request.authorId());
+
+        Category category = categoryRepository.findById(request.categoryId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
+
+        document.update(request.title(), request.content(), category);
+        return toDetailResponse(document);
+    }
+
+    @Override
+    @Transactional
+    public void deleteDocument(Long documentId, Long authorId) {
+        Document document = getDocumentEntity(documentId);
+        validateDocumentAuthor(document, authorId);
+        documentRepository.delete(document);
+    }
+
+    private Document getDocumentEntity(Long documentId) {
+        return documentRepository.findById(documentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.DOCUMENT_NOT_FOUND));
+    }
+
+    private void validateDocumentAuthor(Document document, Long authorId) {
+        if (!document.isWrittenBy(authorId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN_DOCUMENT_ACCESS);
+        }
     }
 
     private DocumentCreateResponse toCreateResponse(Document document) {

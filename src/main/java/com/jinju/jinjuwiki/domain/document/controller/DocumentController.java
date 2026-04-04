@@ -4,6 +4,7 @@ import com.jinju.jinjuwiki.domain.document.dto.DocumentCreateRequest;
 import com.jinju.jinjuwiki.domain.document.dto.DocumentCreateResponse;
 import com.jinju.jinjuwiki.domain.document.dto.DocumentDetailResponse;
 import com.jinju.jinjuwiki.domain.document.dto.DocumentSummaryResponse;
+import com.jinju.jinjuwiki.domain.document.dto.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.service.DocumentService;
 import com.jinju.jinjuwiki.global.response.ApiResponse;
 import com.jinju.jinjuwiki.global.response.PageResponse;
@@ -11,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PutMapping;
 
 // 문서 CRUD 처리 컨트롤러
 @RestController
@@ -47,5 +50,22 @@ public class DocumentController {
             @RequestParam(defaultValue = "10") int size
     ) {
         return ResponseEntity.ok(ApiResponse.of(documentService.getDocuments(categoryId, page, size)));
+    }
+
+    @PutMapping("/{documentId}")
+    public ResponseEntity<ApiResponse<DocumentDetailResponse>> updateDocument(
+            @PathVariable Long documentId,
+            @Valid @RequestBody DocumentUpdateRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.of(documentService.updateDocument(documentId, request)));
+    }
+
+    @DeleteMapping("/{documentId}")
+    public ResponseEntity<Void> deleteDocument(
+            @PathVariable Long documentId,
+            @RequestParam Long authorId
+    ) {
+        documentService.deleteDocument(documentId, authorId);
+        return ResponseEntity.noContent().build();
     }
 }
