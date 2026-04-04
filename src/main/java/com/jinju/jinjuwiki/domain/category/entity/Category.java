@@ -11,6 +11,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+// JPA 표준 패턴 기반(생성 제한) 카테고리 Entity 클래스
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
