@@ -8,10 +8,12 @@ import com.jinju.jinjuwiki.domain.document.dto.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.service.DocumentService;
 import com.jinju.jinjuwiki.global.response.ApiResponse;
 import com.jinju.jinjuwiki.global.response.PageResponse;
+import com.jinju.jinjuwiki.global.security.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,9 +34,10 @@ public class DocumentController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<DocumentCreateResponse>> createDocument(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody DocumentCreateRequest request
     ) {
-        DocumentCreateResponse response = documentService.createDocument(request);
+        DocumentCreateResponse response = documentService.createDocument(request, userPrincipal.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
     }
 
@@ -55,17 +58,18 @@ public class DocumentController {
     @PutMapping("/{documentId}")
     public ResponseEntity<ApiResponse<DocumentDetailResponse>> updateDocument(
             @PathVariable Long documentId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody DocumentUpdateRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.of(documentService.updateDocument(documentId, request)));
+        return ResponseEntity.ok(ApiResponse.of(documentService.updateDocument(documentId, request, userPrincipal.getId())));
     }
 
     @DeleteMapping("/{documentId}")
     public ResponseEntity<Void> deleteDocument(
             @PathVariable Long documentId,
-            @RequestParam Long authorId
+            @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
-        documentService.deleteDocument(documentId, authorId);
+        documentService.deleteDocument(documentId, userPrincipal.getId());
         return ResponseEntity.noContent().build();
     }
 }

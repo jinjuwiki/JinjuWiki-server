@@ -52,6 +52,8 @@ class AuthServiceTest {
 
         LoginResponse response = authService.login(new LoginRequest("login@test.com", "password123"));
 
+        assertThat(response.accessToken()).isNotBlank();
+        assertThat(response.tokenType()).isEqualTo("Bearer");
         assertThat(response.email()).isEqualTo("login@test.com");
         assertThat(response.nickname()).isEqualTo("loginUser");
         assertThat(response.role()).isEqualTo("USER");

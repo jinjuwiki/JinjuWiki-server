@@ -46,7 +46,8 @@ class DocumentServiceTest {
         Category category = categoryRepository.findByName("학교").orElseThrow();
 
         DocumentCreateResponse response = documentService.createDocument(
-                new DocumentCreateRequest("문서 제목", "문서 본문", category.getId(), user.userId())
+                new DocumentCreateRequest("문서 제목", "문서 본문", category.getId()),
+                user.userId()
         );
 
         assertThat(response.documentId()).isNotNull();
@@ -60,7 +61,8 @@ class DocumentServiceTest {
         Category category = categoryRepository.findByName("학교").orElseThrow();
 
         assertThatThrownBy(() -> documentService.createDocument(
-                new DocumentCreateRequest("문서 제목", "문서 본문", category.getId(), 999L)
+                new DocumentCreateRequest("문서 제목", "문서 본문", category.getId()),
+                999L
         ))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
@@ -73,7 +75,8 @@ class DocumentServiceTest {
         SignupResponse user = authService.signup(new SignupRequest("doc2@test.com", "password123", "docUser2"));
         Category category = categoryRepository.findByName("공부").orElseThrow();
         DocumentCreateResponse created = documentService.createDocument(
-                new DocumentCreateRequest("수학 공부법", "개념부터 반복", category.getId(), user.userId())
+                new DocumentCreateRequest("수학 공부법", "개념부터 반복", category.getId()),
+                user.userId()
         );
 
         DocumentDetailResponse response = documentService.getDocument(created.documentId());
@@ -88,8 +91,8 @@ class DocumentServiceTest {
         SignupResponse user = authService.signup(new SignupRequest("doc3@test.com", "password123", "docUser3"));
         Category category = categoryRepository.findByName("생활").orElseThrow();
 
-        documentService.createDocument(new DocumentCreateRequest("첫 번째 글", "내용 1", category.getId(), user.userId()));
-        documentService.createDocument(new DocumentCreateRequest("두 번째 글", "내용 2", category.getId(), user.userId()));
+        documentService.createDocument(new DocumentCreateRequest("첫 번째 글", "내용 1", category.getId()), user.userId());
+        documentService.createDocument(new DocumentCreateRequest("두 번째 글", "내용 2", category.getId()), user.userId());
 
         PageResponse<DocumentSummaryResponse> response = documentService.getDocuments(category.getId(), 0, 10);
 
@@ -104,12 +107,14 @@ class DocumentServiceTest {
         Category category = categoryRepository.findByName("학교").orElseThrow();
         Category updatedCategory = categoryRepository.findByName("입시").orElseThrow();
         DocumentCreateResponse created = documentService.createDocument(
-                new DocumentCreateRequest("원래 제목", "원래 본문", category.getId(), user.userId())
+                new DocumentCreateRequest("원래 제목", "원래 본문", category.getId()),
+                user.userId()
         );
 
         DocumentDetailResponse response = documentService.updateDocument(
                 created.documentId(),
-                new DocumentUpdateRequest("수정 제목", "수정 본문", updatedCategory.getId(), user.userId())
+                new DocumentUpdateRequest("수정 제목", "수정 본문", updatedCategory.getId()),
+                user.userId()
         );
 
         assertThat(response.title()).isEqualTo("수정 제목");
@@ -124,12 +129,14 @@ class DocumentServiceTest {
         SignupResponse otherUser = authService.signup(new SignupRequest("doc6@test.com", "password123", "other6"));
         Category category = categoryRepository.findByName("학교").orElseThrow();
         DocumentCreateResponse created = documentService.createDocument(
-                new DocumentCreateRequest("제목", "본문", category.getId(), author.userId())
+                new DocumentCreateRequest("제목", "본문", category.getId()),
+                author.userId()
         );
 
         assertThatThrownBy(() -> documentService.updateDocument(
                 created.documentId(),
-                new DocumentUpdateRequest("수정 제목", "수정 본문", category.getId(), otherUser.userId())
+                new DocumentUpdateRequest("수정 제목", "수정 본문", category.getId()),
+                otherUser.userId()
         ))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
@@ -142,7 +149,8 @@ class DocumentServiceTest {
         SignupResponse user = authService.signup(new SignupRequest("doc7@test.com", "password123", "docUser7"));
         Category category = categoryRepository.findByName("기타").orElseThrow();
         DocumentCreateResponse created = documentService.createDocument(
-                new DocumentCreateRequest("삭제 제목", "삭제 본문", category.getId(), user.userId())
+                new DocumentCreateRequest("삭제 제목", "삭제 본문", category.getId()),
+                user.userId()
         );
 
         documentService.deleteDocument(created.documentId(), user.userId());
@@ -157,7 +165,8 @@ class DocumentServiceTest {
         SignupResponse otherUser = authService.signup(new SignupRequest("doc9@test.com", "password123", "other9"));
         Category category = categoryRepository.findByName("학교").orElseThrow();
         DocumentCreateResponse created = documentService.createDocument(
-                new DocumentCreateRequest("삭제 전 제목", "삭제 전 본문", category.getId(), author.userId())
+                new DocumentCreateRequest("삭제 전 제목", "삭제 전 본문", category.getId()),
+                author.userId()
         );
 
         assertThatThrownBy(() -> documentService.deleteDocument(created.documentId(), otherUser.userId()))

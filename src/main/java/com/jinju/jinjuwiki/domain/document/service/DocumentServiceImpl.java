@@ -32,8 +32,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public DocumentCreateResponse createDocument(DocumentCreateRequest request) {
-        User author = userRepository.findById(request.authorId())
+    public DocumentCreateResponse createDocument(DocumentCreateRequest request, Long currentUserId) {
+        User author = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         Category category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
@@ -71,9 +71,9 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public DocumentDetailResponse updateDocument(Long documentId, DocumentUpdateRequest request) {
+    public DocumentDetailResponse updateDocument(Long documentId, DocumentUpdateRequest request, Long currentUserId) {
         Document document = getDocumentEntity(documentId);
-        validateDocumentAuthor(document, request.authorId());
+        validateDocumentAuthor(document, currentUserId);
 
         Category category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
@@ -84,9 +84,9 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public void deleteDocument(Long documentId, Long authorId) {
+    public void deleteDocument(Long documentId, Long currentUserId) {
         Document document = getDocumentEntity(documentId);
-        validateDocumentAuthor(document, authorId);
+        validateDocumentAuthor(document, currentUserId);
         documentRepository.delete(document);
     }
 

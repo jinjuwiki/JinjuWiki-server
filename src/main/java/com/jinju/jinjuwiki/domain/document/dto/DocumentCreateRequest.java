@@ -13,9 +13,6 @@ public record DocumentCreateRequest(
         String content,
 
         @NotNull(message = "카테고리 ID는 필수입니다.")
-        Long categoryId,
-
-        @NotNull(message = "작성자 ID는 필수입니다.")
-        Long authorId
+        Long categoryId
 ) {
 }

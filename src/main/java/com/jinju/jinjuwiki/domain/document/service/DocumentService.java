@@ -9,13 +9,13 @@ import com.jinju.jinjuwiki.global.response.PageResponse;
 
 public interface DocumentService {
 
-    DocumentCreateResponse createDocument(DocumentCreateRequest request);
+    DocumentCreateResponse createDocument(DocumentCreateRequest request, Long currentUserId);
 
     DocumentDetailResponse getDocument(Long documentId);
 
     PageResponse<DocumentSummaryResponse> getDocuments(Long categoryId, int page, int size);
 
-    DocumentDetailResponse updateDocument(Long documentId, DocumentUpdateRequest request);
+    DocumentDetailResponse updateDocument(Long documentId, DocumentUpdateRequest request, Long currentUserId);
 
-    void deleteDocument(Long documentId, Long authorId);
+    void deleteDocument(Long documentId, Long currentUserId);
 }
