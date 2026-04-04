@@ -14,6 +14,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+// JPA 표준 패턴 기반 유저 Entity 클래스
 @Getter
 @Entity
 @Table(name = "users")
@@ -27,6 +28,7 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
+    // 암호화 필요
     @Column(nullable = false)
     private String password;
 

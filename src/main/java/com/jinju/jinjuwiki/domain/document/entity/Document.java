@@ -16,6 +16,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+// JPA 표준 패턴 기반 문서 Entity 클래스
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -34,10 +35,13 @@ public class Document extends BaseEntity {
     @Column(nullable = false)
     private Long viewCount;
 
+    // LAZY 사용하여 성능 최적화(EAGER 사용시 Category + User 모두 조회)
+    // N : 1(Document : User) 관계
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
+    // 문서 여러개 -> 카테고리 1개
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;

@@ -9,6 +9,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+// 모든 Entity의 생성/수정 시간 자동 관리 클래스(DB 연동 X(MappedSuperClass))
 @Getter
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
