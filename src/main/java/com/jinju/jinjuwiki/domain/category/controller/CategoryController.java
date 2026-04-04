@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+// 카테고리 컨트롤러
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/categories")

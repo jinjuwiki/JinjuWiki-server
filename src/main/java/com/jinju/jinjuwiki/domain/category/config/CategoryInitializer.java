@@ -17,7 +17,7 @@ public class CategoryInitializer {
     @Bean
     public CommandLineRunner initCategories() {
         return args -> {
-            List<String> defaultCategories = List.of("학교", "공부", "생활", "입시", "기타");
+            List<String> defaultCategories = List.of("학교", "공부", "생활", "입시", "기타"); // 카테고리 수정 가능
             List<Category> categories = defaultCategories.stream()
                     .filter(name -> !categoryRepository.existsByName(name))
                     .map(name -> Category.builder().name(name).build())
