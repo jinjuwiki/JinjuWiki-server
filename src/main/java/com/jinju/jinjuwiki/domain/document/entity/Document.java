@@ -54,4 +54,8 @@ public class Document extends BaseEntity {
         this.category = category;
         this.viewCount = 0L;
     }
+
+    public void increaseViewCount() {
+        this.viewCount++;
+    }
 }
