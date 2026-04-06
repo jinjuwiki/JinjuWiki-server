@@ -70,6 +70,32 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    public PageResponse<DocumentSummaryResponse> searchDocuments(String keyword, Long categoryId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        String normalizedKeyword = keyword == null ? "" : keyword.trim();
+
+        if (normalizedKeyword.isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
+
+        Page<Document> documents = categoryId == null
+                ? documentRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCaseOrderByCreatedAtDesc(
+                        normalizedKeyword,
+                        normalizedKeyword,
+                        pageable
+                )
+                : documentRepository.findByCategoryIdAndTitleContainingIgnoreCaseOrCategoryIdAndContentContainingIgnoreCaseOrderByCreatedAtDesc(
+                        categoryId,
+                        normalizedKeyword,
+                        categoryId,
+                        normalizedKeyword,
+                        pageable
+                );
+
+        return PageResponse.from(documents.map(this::toSummaryResponse));
+    }
+
+    @Override
     @Transactional
     public DocumentDetailResponse updateDocument(Long documentId, DocumentUpdateRequest request, Long currentUserId) {
         Document document = getDocumentEntity(documentId);

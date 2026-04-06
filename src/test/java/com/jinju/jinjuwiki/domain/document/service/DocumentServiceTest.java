@@ -174,4 +174,58 @@ class DocumentServiceTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.FORBIDDEN_DOCUMENT_ACCESS);
     }
+
+    @Test
+    @DisplayName("키워드로 제목과 본문을 검색할 수 있다.")
+    void searchDocumentsSuccess() {
+        SignupResponse user = authService.signup(new SignupRequest("doc10@test.com", "password123", "docUser10"));
+        Category schoolCategory = categoryRepository.findByName("학교").orElseThrow();
+        Category studyCategory = categoryRepository.findByName("공부").orElseThrow();
+
+        documentService.createDocument(
+                new DocumentCreateRequest("진주 학교 생활", "학교 행사 정보", schoolCategory.getId()),
+                user.userId()
+        );
+        documentService.createDocument(
+                new DocumentCreateRequest("수학 공부법", "시험 대비 공부 루틴", studyCategory.getId()),
+                user.userId()
+        );
+
+        PageResponse<DocumentSummaryResponse> response = documentService.searchDocuments("공부", null, 0, 10);
+
+        assertThat(response.content()).hasSize(1);
+        assertThat(response.content().get(0).title()).isEqualTo("수학 공부법");
+    }
+
+    @Test
+    @DisplayName("검색은 카테고리 필터와 함께 사용할 수 있다.")
+    void searchDocumentsWithCategory() {
+        SignupResponse user = authService.signup(new SignupRequest("doc11@test.com", "password123", "docUser11"));
+        Category schoolCategory = categoryRepository.findByName("학교").orElseThrow();
+        Category studyCategory = categoryRepository.findByName("공부").orElseThrow();
+
+        documentService.createDocument(
+                new DocumentCreateRequest("학교 시험 정보", "학교 공지", schoolCategory.getId()),
+                user.userId()
+        );
+        documentService.createDocument(
+                new DocumentCreateRequest("수학 시험 대비", "공부 계획", studyCategory.getId()),
+                user.userId()
+        );
+
+        PageResponse<DocumentSummaryResponse> response =
+                documentService.searchDocuments("시험", studyCategory.getId(), 0, 10);
+
+        assertThat(response.content()).hasSize(1);
+        assertThat(response.content().get(0).categoryName()).isEqualTo("공부");
+    }
+
+    @Test
+    @DisplayName("빈 검색어로 검색하면 예외가 발생한다.")
+    void searchDocumentsFailWhenKeywordIsBlank() {
+        assertThatThrownBy(() -> documentService.searchDocuments("   ", null, 0, 10))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_INPUT);
+    }
 }
