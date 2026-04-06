@@ -10,4 +10,18 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     Page<Document> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     Page<Document> findByCategoryIdOrderByCreatedAtDesc(Long categoryId, Pageable pageable);
+
+    Page<Document> findByTitleContainingIgnoreCaseOrContentContainingIgnoreCaseOrderByCreatedAtDesc(
+            String titleKeyword,
+            String contentKeyword,
+            Pageable pageable
+    );
+
+    Page<Document> findByCategoryIdAndTitleContainingIgnoreCaseOrCategoryIdAndContentContainingIgnoreCaseOrderByCreatedAtDesc(
+            Long categoryIdForTitle,
+            String titleKeyword,
+            Long categoryIdForContent,
+            String contentKeyword,
+            Pageable pageable
+    );
 }

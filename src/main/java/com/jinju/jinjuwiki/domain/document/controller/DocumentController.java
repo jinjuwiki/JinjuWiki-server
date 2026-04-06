@@ -55,6 +55,16 @@ public class DocumentController {
         return ResponseEntity.ok(ApiResponse.of(documentService.getDocuments(categoryId, page, size)));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<PageResponse<DocumentSummaryResponse>>> searchDocuments(
+            @RequestParam String keyword,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(ApiResponse.of(documentService.searchDocuments(keyword, categoryId, page, size)));
+    }
+
     @PutMapping("/{documentId}")
     public ResponseEntity<ApiResponse<DocumentDetailResponse>> updateDocument(
             @PathVariable Long documentId,
