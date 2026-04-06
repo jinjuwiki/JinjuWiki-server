@@ -3,6 +3,7 @@ package com.jinju.jinjuwiki.global.error;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.time.LocalDateTime;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -37,6 +38,36 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return buildResponse(ErrorCode.INVALID_INPUT, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
+            DataIntegrityViolationException ex,
+            HttpServletRequest request
+    ) {
+        String message = ex.getMostSpecificCause() == null ? "" : ex.getMostSpecificCause().getMessage();
+
+        if (message.contains("email")) {
+            return buildResponse(
+                    ErrorCode.DUPLICATE_EMAIL,
+                    ErrorCode.DUPLICATE_EMAIL.getMessage(),
+                    request.getRequestURI()
+            );
+        }
+
+        if (message.contains("nickname")) {
+            return buildResponse(
+                    ErrorCode.DUPLICATE_NICKNAME,
+                    ErrorCode.DUPLICATE_NICKNAME.getMessage(),
+                    request.getRequestURI()
+            );
+        }
+
+        return buildResponse(
+                ErrorCode.INVALID_INPUT,
+                ErrorCode.INVALID_INPUT.getMessage(),
+                request.getRequestURI()
+        );
     }
 
     // 서버 터짐 방지

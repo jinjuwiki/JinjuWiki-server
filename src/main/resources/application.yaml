@@ -18,5 +18,5 @@ logging:
     org.hibernate.SQL: debug
 
 jwt:
-  secret: jinjuwiki-jwt-secret-key-for-local-development-2026
+  secret: ${JWT_SECRET}
   access-token-expiration: 3600000
