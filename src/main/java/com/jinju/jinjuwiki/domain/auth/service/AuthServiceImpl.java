@@ -2,8 +2,14 @@ package com.jinju.jinjuwiki.domain.auth.service;
 
 import com.jinju.jinjuwiki.domain.auth.dto.LoginRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.LoginResponse;
+import com.jinju.jinjuwiki.domain.auth.dto.EmailVerificationSendRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.EmailVerificationSendResponse;
+import com.jinju.jinjuwiki.domain.auth.dto.EmailVerificationVerifyRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.EmailVerificationVerifyResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.SignupRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.SignupResponse;
+import com.jinju.jinjuwiki.domain.auth.entity.EmailVerification;
+import com.jinju.jinjuwiki.domain.auth.repository.EmailVerificationRepository;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.entity.UserRole;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
@@ -11,7 +17,11 @@ import com.jinju.jinjuwiki.global.error.BusinessException;
 import com.jinju.jinjuwiki.global.error.ErrorCode;
 import com.jinju.jinjuwiki.global.security.JwtTokenProvider;
 import com.jinju.jinjuwiki.global.security.UserPrincipal;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,13 +33,62 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
+    private final EmailVerificationRepository emailVerificationRepository;
+    private final EmailSender emailSender;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+
+    @Value("${app.auth.email-verification-expiration-minutes}")
+    private long emailVerificationExpirationMinutes;
+
+    @Override
+    @Transactional
+    public EmailVerificationSendResponse sendVerificationCode(EmailVerificationSendRequest request) {
+        validateEmailAvailable(request.email());
+
+        String code = generateVerificationCode();
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(emailVerificationExpirationMinutes);
+
+        Optional<EmailVerification> existing = emailVerificationRepository.findByEmail(request.email());
+        if (existing.isPresent()) {
+            existing.get().reissue(code, expiresAt);
+        } else {
+            emailVerificationRepository.save(EmailVerification.builder()
+                    .email(request.email())
+                    .code(code)
+                    .verified(false)
+                    .expiresAt(expiresAt)
+                    .build());
+        }
+
+        emailSender.sendVerificationCode(request.email(), code);
+        return new EmailVerificationSendResponse(request.email(), expiresAt);
+    }
+
+    @Override
+    @Transactional
+    public EmailVerificationVerifyResponse verifyCode(EmailVerificationVerifyRequest request) {
+        EmailVerification verification = emailVerificationRepository.findByEmail(request.email())
+                .orElseThrow(() -> new BusinessException(ErrorCode.EMAIL_VERIFICATION_NOT_FOUND));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (verification.isExpired(now)) {
+            throw new BusinessException(ErrorCode.EMAIL_VERIFICATION_EXPIRED);
+        }
+
+        if (!verification.matches(request.code())) {
+            throw new BusinessException(ErrorCode.EMAIL_VERIFICATION_CODE_MISMATCH);
+        }
+
+        verification.verify(now);
+        return new EmailVerificationVerifyResponse(verification.getEmail(), true, verification.getVerifiedAt());
+    }
 
     @Override
     @Transactional
     public SignupResponse signup(SignupRequest request) {
         validateDuplicate(request);
+        validateEmailVerified(request.email());
 
         User user = User.builder()
                 .email(request.email())
@@ -39,6 +98,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         User savedUser = userRepository.save(user); // DB 저장
+        emailVerificationRepository.deleteByEmail(request.email());
 
         return new SignupResponse(savedUser.getId(), savedUser.getEmail(), savedUser.getNickname());
     }
@@ -74,5 +134,28 @@ public class AuthServiceImpl implements AuthService {
         if (userRepository.existsByNickname(request.nickname())) {
             throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
         }
+    }
+
+    private void validateEmailAvailable(String email) {
+        if (userRepository.existsByEmail(email)) {
+            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+        }
+    }
+
+    private void validateEmailVerified(String email) {
+        EmailVerification verification = emailVerificationRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED));
+
+        if (verification.isExpired(LocalDateTime.now())) {
+            throw new BusinessException(ErrorCode.EMAIL_VERIFICATION_EXPIRED);
+        }
+
+        if (!verification.isVerified()) {
+            throw new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED);
+        }
+    }
+
+    private String generateVerificationCode() {
+        return String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
     }
 }

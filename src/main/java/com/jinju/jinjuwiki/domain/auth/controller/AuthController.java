@@ -1,5 +1,9 @@
 package com.jinju.jinjuwiki.domain.auth.controller;
 
+import com.jinju.jinjuwiki.domain.auth.dto.EmailVerificationSendRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.EmailVerificationSendResponse;
+import com.jinju.jinjuwiki.domain.auth.dto.EmailVerificationVerifyRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.EmailVerificationVerifyResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.LoginRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.LoginResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.SignupRequest;
@@ -26,8 +30,26 @@ public class AuthController {
 
     private final AuthService authService;
 
+    @PostMapping("/email/send")
+    @Operation(summary = "이메일 인증코드 발송", description = "회원가입 전 이메일 인증코드를 발송합니다.")
+    public ResponseEntity<ApiResponse<EmailVerificationSendResponse>> sendVerificationCode(
+            @Valid @RequestBody EmailVerificationSendRequest request
+    ) {
+        EmailVerificationSendResponse response = authService.sendVerificationCode(request);
+        return ResponseEntity.ok(ApiResponse.of(response));
+    }
+
+    @PostMapping("/email/verify")
+    @Operation(summary = "이메일 인증코드 검증", description = "발송된 이메일 인증코드를 검증합니다.")
+    public ResponseEntity<ApiResponse<EmailVerificationVerifyResponse>> verifyCode(
+            @Valid @RequestBody EmailVerificationVerifyRequest request
+    ) {
+        EmailVerificationVerifyResponse response = authService.verifyCode(request);
+        return ResponseEntity.ok(ApiResponse.of(response));
+    }
+
     @PostMapping("/signup")
-    @Operation(summary = "회원가입", description = "이메일, 비밀번호, 닉네임으로 회원가입을 진행합니다.")
+    @Operation(summary = "회원가입", description = "이메일 인증이 완료된 계정으로 회원가입을 진행합니다.")
     public ResponseEntity<ApiResponse<SignupResponse>> signup(@Valid @RequestBody SignupRequest request) {
         SignupResponse response = authService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
