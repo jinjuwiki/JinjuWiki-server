@@ -1,11 +1,15 @@
 package com.jinju.jinjuwiki.domain.document.service;
 
+import com.jinju.jinjuwiki.domain.auth.dto.EmailVerificationSendRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.EmailVerificationVerifyRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.jinju.jinjuwiki.domain.auth.dto.SignupRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.SignupResponse;
+import com.jinju.jinjuwiki.domain.auth.repository.EmailVerificationRepository;
 import com.jinju.jinjuwiki.domain.auth.service.AuthService;
+import com.jinju.jinjuwiki.domain.auth.service.EmailSender;
 import com.jinju.jinjuwiki.domain.category.entity.Category;
 import com.jinju.jinjuwiki.domain.category.repository.CategoryRepository;
 import com.jinju.jinjuwiki.domain.document.dto.DocumentCreateRequest;
@@ -20,6 +24,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.transaction.annotation.Transactional;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 
@@ -39,9 +46,24 @@ class DocumentServiceTest {
     @Autowired
     private DocumentRepository documentRepository;
 
+    @Autowired
+    private EmailVerificationRepository emailVerificationRepository;
+
+    @TestConfiguration
+    static class TestMailConfig {
+
+        @Bean
+        @Primary
+        EmailSender emailSender() {
+            return (to, code) -> {
+            };
+        }
+    }
+
     @Test
     @DisplayName("문서를 생성하면 작성자와 카테고리 정보가 함께 반환된다.")
     void createDocumentSuccess() {
+        verifyEmail("doc1@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc1@test.com", "password123", "docUser"));
         Category category = categoryRepository.findByName("학교").orElseThrow();
 
@@ -72,6 +94,7 @@ class DocumentServiceTest {
     @Test
     @DisplayName("문서를 조회하면 조회수가 증가한다.")
     void getDocumentSuccess() {
+        verifyEmail("doc2@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc2@test.com", "password123", "docUser2"));
         Category category = categoryRepository.findByName("학생").orElseThrow();
         DocumentCreateResponse created = documentService.createDocument(
@@ -88,6 +111,7 @@ class DocumentServiceTest {
     @Test
     @DisplayName("문서 목록은 최신순으로 페이지 조회할 수 있다.")
     void getDocumentsSuccess() {
+        verifyEmail("doc3@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc3@test.com", "password123", "docUser3"));
         Category category = categoryRepository.findByName("사건사고").orElseThrow();
 
@@ -103,6 +127,7 @@ class DocumentServiceTest {
     @Test
     @DisplayName("작성자는 자신의 문서를 수정할 수 있다.")
     void updateDocumentSuccess() {
+        verifyEmail("doc4@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc4@test.com", "password123", "docUser4"));
         Category category = categoryRepository.findByName("학교").orElseThrow();
         Category updatedCategory = categoryRepository.findByName("선생님").orElseThrow();
@@ -125,7 +150,9 @@ class DocumentServiceTest {
     @Test
     @DisplayName("작성자가 아니면 문서를 수정할 수 없다.")
     void updateDocumentFailWhenNotAuthor() {
+        verifyEmail("doc5@test.com");
         SignupResponse author = authService.signup(new SignupRequest("doc5@test.com", "password123", "author5"));
+        verifyEmail("doc6@test.com");
         SignupResponse otherUser = authService.signup(new SignupRequest("doc6@test.com", "password123", "other6"));
         Category category = categoryRepository.findByName("학교").orElseThrow();
         DocumentCreateResponse created = documentService.createDocument(
@@ -146,6 +173,7 @@ class DocumentServiceTest {
     @Test
     @DisplayName("작성자는 자신의 문서를 삭제할 수 있다.")
     void deleteDocumentSuccess() {
+        verifyEmail("doc7@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc7@test.com", "password123", "docUser7"));
         Category category = categoryRepository.findByName("기타").orElseThrow();
         DocumentCreateResponse created = documentService.createDocument(
@@ -161,7 +189,9 @@ class DocumentServiceTest {
     @Test
     @DisplayName("작성자가 아니면 문서를 삭제할 수 없다.")
     void deleteDocumentFailWhenNotAuthor() {
+        verifyEmail("doc8@test.com");
         SignupResponse author = authService.signup(new SignupRequest("doc8@test.com", "password123", "author8"));
+        verifyEmail("doc9@test.com");
         SignupResponse otherUser = authService.signup(new SignupRequest("doc9@test.com", "password123", "other9"));
         Category category = categoryRepository.findByName("학교").orElseThrow();
         DocumentCreateResponse created = documentService.createDocument(
@@ -178,6 +208,7 @@ class DocumentServiceTest {
     @Test
     @DisplayName("키워드로 제목과 본문을 검색할 수 있다.")
     void searchDocumentsSuccess() {
+        verifyEmail("doc10@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc10@test.com", "password123", "docUser10"));
         Category schoolCategory = categoryRepository.findByName("학교").orElseThrow();
         Category studyCategory = categoryRepository.findByName("학생").orElseThrow();
@@ -200,6 +231,7 @@ class DocumentServiceTest {
     @Test
     @DisplayName("검색은 카테고리 필터와 함께 사용할 수 있다.")
     void searchDocumentsWithCategory() {
+        verifyEmail("doc11@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc11@test.com", "password123", "docUser11"));
         Category schoolCategory = categoryRepository.findByName("학교").orElseThrow();
         Category studyCategory = categoryRepository.findByName("학생").orElseThrow();
@@ -227,5 +259,11 @@ class DocumentServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.INVALID_INPUT);
+    }
+
+    private void verifyEmail(String email) {
+        authService.sendVerificationCode(new EmailVerificationSendRequest(email));
+        String code = emailVerificationRepository.findByEmail(email).orElseThrow().getCode();
+        authService.verifyCode(new EmailVerificationVerifyRequest(email, code));
     }
 }

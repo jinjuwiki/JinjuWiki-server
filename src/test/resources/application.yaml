@@ -8,6 +8,9 @@ spring:
     hibernate:
       ddl-auto: create-drop
     open-in-view: false
+  mail:
+    host: localhost
+    port: 2525
 
 jwt:
   secret: jinjuwiki-jwt-secret-key-for-test-environment-2026
@@ -16,3 +19,5 @@ jwt:
 app:
   auth:
     email-verification-expiration-minutes: 5
+  mail:
+    from: test@jinjuwiki.local
