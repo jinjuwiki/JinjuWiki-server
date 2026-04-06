@@ -73,7 +73,7 @@ class DocumentServiceTest {
     @DisplayName("문서를 조회하면 조회수가 증가한다.")
     void getDocumentSuccess() {
         SignupResponse user = authService.signup(new SignupRequest("doc2@test.com", "password123", "docUser2"));
-        Category category = categoryRepository.findByName("공부").orElseThrow();
+        Category category = categoryRepository.findByName("학생").orElseThrow();
         DocumentCreateResponse created = documentService.createDocument(
                 new DocumentCreateRequest("수학 공부법", "개념부터 반복", category.getId()),
                 user.userId()
@@ -89,7 +89,7 @@ class DocumentServiceTest {
     @DisplayName("문서 목록은 최신순으로 페이지 조회할 수 있다.")
     void getDocumentsSuccess() {
         SignupResponse user = authService.signup(new SignupRequest("doc3@test.com", "password123", "docUser3"));
-        Category category = categoryRepository.findByName("생활").orElseThrow();
+        Category category = categoryRepository.findByName("사건사고").orElseThrow();
 
         documentService.createDocument(new DocumentCreateRequest("첫 번째 글", "내용 1", category.getId()), user.userId());
         documentService.createDocument(new DocumentCreateRequest("두 번째 글", "내용 2", category.getId()), user.userId());
@@ -105,7 +105,7 @@ class DocumentServiceTest {
     void updateDocumentSuccess() {
         SignupResponse user = authService.signup(new SignupRequest("doc4@test.com", "password123", "docUser4"));
         Category category = categoryRepository.findByName("학교").orElseThrow();
-        Category updatedCategory = categoryRepository.findByName("입시").orElseThrow();
+        Category updatedCategory = categoryRepository.findByName("선생님").orElseThrow();
         DocumentCreateResponse created = documentService.createDocument(
                 new DocumentCreateRequest("원래 제목", "원래 본문", category.getId()),
                 user.userId()
@@ -119,7 +119,7 @@ class DocumentServiceTest {
 
         assertThat(response.title()).isEqualTo("수정 제목");
         assertThat(response.content()).isEqualTo("수정 본문");
-        assertThat(response.categoryName()).isEqualTo("입시");
+        assertThat(response.categoryName()).isEqualTo("선생님");
     }
 
     @Test
@@ -180,7 +180,7 @@ class DocumentServiceTest {
     void searchDocumentsSuccess() {
         SignupResponse user = authService.signup(new SignupRequest("doc10@test.com", "password123", "docUser10"));
         Category schoolCategory = categoryRepository.findByName("학교").orElseThrow();
-        Category studyCategory = categoryRepository.findByName("공부").orElseThrow();
+        Category studyCategory = categoryRepository.findByName("학생").orElseThrow();
 
         documentService.createDocument(
                 new DocumentCreateRequest("진주 학교 생활", "학교 행사 정보", schoolCategory.getId()),
@@ -202,7 +202,7 @@ class DocumentServiceTest {
     void searchDocumentsWithCategory() {
         SignupResponse user = authService.signup(new SignupRequest("doc11@test.com", "password123", "docUser11"));
         Category schoolCategory = categoryRepository.findByName("학교").orElseThrow();
-        Category studyCategory = categoryRepository.findByName("공부").orElseThrow();
+        Category studyCategory = categoryRepository.findByName("학생").orElseThrow();
 
         documentService.createDocument(
                 new DocumentCreateRequest("학교 시험 정보", "학교 공지", schoolCategory.getId()),
@@ -217,7 +217,7 @@ class DocumentServiceTest {
                 documentService.searchDocuments("시험", studyCategory.getId(), 0, 10);
 
         assertThat(response.content()).hasSize(1);
-        assertThat(response.content().get(0).categoryName()).isEqualTo("공부");
+        assertThat(response.content().get(0).categoryName()).isEqualTo("학생");
     }
 
     @Test
