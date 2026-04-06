@@ -1,24 +1,20 @@
 spring:
   docker:
     compose:
-      enabled: false
+      enabled: true
   datasource:
-    url: jdbc:h2:mem:jinjuwiki-local;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: jdbc:postgresql://localhost:5432/jinjuwiki
+    username: jinjuwiki
+    password: jinjuwiki
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     open-in-view: false
-  h2:
-    console:
-      enabled: true
 
 logging:
   level:
     org.hibernate.SQL: debug
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:jinjuwiki-jwt-secret-key-for-local-development-2026}
   access-token-expiration: 3600000
