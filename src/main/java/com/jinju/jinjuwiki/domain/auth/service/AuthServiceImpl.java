@@ -9,6 +9,8 @@ import com.jinju.jinjuwiki.domain.user.entity.UserRole;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import com.jinju.jinjuwiki.global.error.BusinessException;
 import com.jinju.jinjuwiki.global.error.ErrorCode;
+import com.jinju.jinjuwiki.global.security.JwtTokenProvider;
+import com.jinju.jinjuwiki.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Override
     @Transactional
@@ -50,7 +53,11 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.INVALID_LOGIN); // 에러 통일
         }
 
+        String accessToken = jwtTokenProvider.createAccessToken(UserPrincipal.from(user));
+
         return new LoginResponse(
+                accessToken,
+                "Bearer",
                 user.getId(),
                 user.getEmail(),
                 user.getNickname(),
