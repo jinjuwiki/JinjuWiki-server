@@ -9,10 +9,14 @@ import com.jinju.jinjuwiki.domain.auth.dto.SignupRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.SignupResponse;
 import com.jinju.jinjuwiki.global.error.BusinessException;
 import com.jinju.jinjuwiki.global.error.ErrorCode;
+import com.jinju.jinjuwiki.domain.user.entity.User;
+import com.jinju.jinjuwiki.domain.user.entity.UserRole;
+import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
 @Transactional
@@ -21,6 +25,9 @@ class AuthServiceTest {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Test
     @DisplayName("회원가입에 성공하면 사용자 기본 정보를 반환한다.")
@@ -68,5 +75,24 @@ class AuthServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.INVALID_LOGIN);
+    }
+
+    @Test
+    @DisplayName("DB unique 제약으로 이메일이 중복되어도 데이터 무결성 예외가 발생한다.")
+    void duplicateEmailCanFailAtDatabaseLevel() {
+        userRepository.save(User.builder()
+                .email("dbdup@test.com")
+                .password("encoded-password")
+                .nickname("dbUser1")
+                .role(UserRole.USER)
+                .build());
+
+        assertThatThrownBy(() -> userRepository.saveAndFlush(User.builder()
+                .email("dbdup@test.com")
+                .password("encoded-password")
+                .nickname("dbUser2")
+                .role(UserRole.USER)
+                .build()))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 }
