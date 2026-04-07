@@ -1,4 +1,4 @@
-package com.jinju.jinjuwiki.domain.auth.dto;
+package com.jinju.jinjuwiki.domain.auth.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
