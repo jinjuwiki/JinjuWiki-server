@@ -3,13 +3,13 @@ services:
     image: postgres:16
     container_name: jinjuwiki-postgres
     environment:
-      POSTGRES_DB: jinjuwiki
-      POSTGRES_USER: jinjuwiki
-      POSTGRES_PASSWORD: jinjuwiki
+      POSTGRES_DB: ${DB_NAME:-jinjuwiki}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jinjuwiki -d jinjuwiki"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME:-jinjuwiki}"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -3,9 +3,9 @@ spring:
     compose:
       enabled: true
   datasource:
-    url: jdbc:postgresql://localhost:5432/jinjuwiki
-    username: jinjuwiki
-    password: jinjuwiki
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:jinjuwiki}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update
@@ -27,7 +27,7 @@ logging:
     org.hibernate.SQL: debug
 
 jwt:
-  secret: ${JWT_SECRET:jinjuwiki-jwt-secret-key-for-local-development-2026}
+  secret: ${JWT_SECRET}
   access-token-expiration: 3600000
 
 app:
