@@ -79,18 +79,8 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         Page<Document> documents = categoryId == null
-                ? documentRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCaseOrderByCreatedAtDesc(
-                        normalizedKeyword,
-                        normalizedKeyword,
-                        pageable
-                )
-                : documentRepository.findByCategoryIdAndTitleContainingIgnoreCaseOrCategoryIdAndContentContainingIgnoreCaseOrderByCreatedAtDesc(
-                        categoryId,
-                        normalizedKeyword,
-                        categoryId,
-                        normalizedKeyword,
-                        pageable
-                );
+                ? documentRepository.searchByKeyword(normalizedKeyword, pageable)
+                : documentRepository.searchByCategoryAndKeyword(categoryId, normalizedKeyword, pageable);
 
         return PageResponse.from(documents.map(this::toSummaryResponse));
     }
