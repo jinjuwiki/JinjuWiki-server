@@ -35,6 +35,7 @@ public class EmailVerification extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime expiresAt;
 
+    @Column
     private LocalDateTime verifiedAt;
 
     @Builder
