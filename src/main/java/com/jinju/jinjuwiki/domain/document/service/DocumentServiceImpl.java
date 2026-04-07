@@ -29,6 +29,8 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final DocumentDomainService documentDomainService;
+    private final DocumentMapper documentMapper;
 
     @Override
     @Transactional
@@ -46,17 +48,16 @@ public class DocumentServiceImpl implements DocumentService {
                 .build();
 
         Document savedDocument = documentRepository.save(document);
-        return toCreateResponse(savedDocument);
+        return documentMapper.toCreateResponse(savedDocument);
     }
 
     @Override
     @Transactional
     public DocumentDetailResponse getDocument(Long id) {
-        Document document = documentRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.DOCUMENT_NOT_FOUND));
+        Document document = documentDomainService.getDocument(id);
 
         document.increaseViewCount();
-        return toDetailResponse(document);
+        return documentMapper.toDetailResponse(document);
     }
 
     @Override
@@ -66,7 +67,7 @@ public class DocumentServiceImpl implements DocumentService {
                 ? documentRepository.findAllByOrderByCreatedAtDesc(pageable)
                 : documentRepository.findByCategoryIdOrderByCreatedAtDesc(categoryId, pageable);
 
-        return PageResponse.from(documents.map(this::toSummaryResponse));
+        return PageResponse.from(documents.map(documentMapper::toSummaryResponse));
     }
 
     @Override
@@ -82,78 +83,27 @@ public class DocumentServiceImpl implements DocumentService {
                 ? documentRepository.searchByKeyword(normalizedKeyword, pageable)
                 : documentRepository.searchByCategoryAndKeyword(categoryId, normalizedKeyword, pageable);
 
-        return PageResponse.from(documents.map(this::toSummaryResponse));
+        return PageResponse.from(documents.map(documentMapper::toSummaryResponse));
     }
 
     @Override
     @Transactional
     public DocumentDetailResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId) {
-        Document document = getDocumentEntity(id);
-        validateDocumentAuthor(document, currentUserId);
+        Document document = documentDomainService.getDocument(id);
+        documentDomainService.validateAuthor(document, currentUserId);
 
         Category category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
         document.update(request.title(), request.content(), category);
-        return toDetailResponse(document);
+        return documentMapper.toDetailResponse(document);
     }
 
     @Override
     @Transactional
     public void deleteDocument(Long id, Long currentUserId) {
-        Document document = getDocumentEntity(id);
-        validateDocumentAuthor(document, currentUserId);
+        Document document = documentDomainService.getDocument(id);
+        documentDomainService.validateAuthor(document, currentUserId);
         documentRepository.delete(document);
-    }
-
-    private Document getDocumentEntity(Long id) {
-        return documentRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.DOCUMENT_NOT_FOUND));
-    }
-
-    private void validateDocumentAuthor(Document document, Long authorId) {
-        if (!document.isWrittenBy(authorId)) {
-            throw new BusinessException(ErrorCode.FORBIDDEN_DOCUMENT_ACCESS);
-        }
-    }
-
-    private DocumentCreateResponse toCreateResponse(Document document) {
-        return new DocumentCreateResponse(
-                document.getId(),
-                document.getTitle(),
-                document.getContent(),
-                document.getCategory().getId(),
-                document.getCategory().getName(),
-                document.getAuthor().getId(),
-                document.getAuthor().getNickname(),
-                document.getCreatedAt()
-        );
-    }
-
-    private DocumentDetailResponse toDetailResponse(Document document) {
-        return new DocumentDetailResponse(
-                document.getId(),
-                document.getTitle(),
-                document.getContent(),
-                document.getCategory().getId(),
-                document.getCategory().getName(),
-                document.getAuthor().getId(),
-                document.getAuthor().getNickname(),
-                document.getViewCount(),
-                document.getCreatedAt(),
-                document.getUpdatedAt()
-        );
-    }
-
-    private DocumentSummaryResponse toSummaryResponse(Document document) {
-        return new DocumentSummaryResponse(
-                document.getId(),
-                document.getTitle(),
-                document.getCategory().getId(),
-                document.getCategory().getName(),
-                document.getAuthor().getNickname(),
-                document.getViewCount(),
-                document.getCreatedAt()
-        );
     }
 }
