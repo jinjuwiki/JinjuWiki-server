@@ -51,8 +51,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public DocumentDetailResponse getDocument(Long documentId) {
-        Document document = documentRepository.findById(documentId)
+    public DocumentDetailResponse getDocument(Long id) {
+        Document document = documentRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DOCUMENT_NOT_FOUND));
 
         document.increaseViewCount();
@@ -97,8 +97,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public DocumentDetailResponse updateDocument(Long documentId, DocumentUpdateRequest request, Long currentUserId) {
-        Document document = getDocumentEntity(documentId);
+    public DocumentDetailResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId) {
+        Document document = getDocumentEntity(id);
         validateDocumentAuthor(document, currentUserId);
 
         Category category = categoryRepository.findById(request.categoryId())
@@ -110,14 +110,14 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public void deleteDocument(Long documentId, Long currentUserId) {
-        Document document = getDocumentEntity(documentId);
+    public void deleteDocument(Long id, Long currentUserId) {
+        Document document = getDocumentEntity(id);
         validateDocumentAuthor(document, currentUserId);
         documentRepository.delete(document);
     }
 
-    private Document getDocumentEntity(Long documentId) {
-        return documentRepository.findById(documentId)
+    private Document getDocumentEntity(Long id) {
+        return documentRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DOCUMENT_NOT_FOUND));
     }
 
