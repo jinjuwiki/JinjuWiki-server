@@ -8,6 +8,7 @@ import com.jinju.jinjuwiki.domain.document.dto.response.DocumentDetailResponse;
 import com.jinju.jinjuwiki.domain.document.dto.response.DocumentSummaryResponse;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
+import com.jinju.jinjuwiki.domain.document.mapper.DocumentMapper;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;

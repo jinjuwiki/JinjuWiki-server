@@ -1,4 +1,4 @@
-package com.jinju.jinjuwiki.domain.document.service;
+package com.jinju.jinjuwiki.domain.document.mapper;
 
 import com.jinju.jinjuwiki.domain.document.dto.response.DocumentCreateResponse;
 import com.jinju.jinjuwiki.domain.document.dto.response.DocumentDetailResponse;
@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DocumentMapper {
 
+    // 문서 엔티티를 생성 응답 DTO로 변환하는 매퍼다.
     public DocumentCreateResponse toCreateResponse(Document document) {
         return new DocumentCreateResponse(
                 document.getId(),
@@ -22,6 +23,7 @@ public class DocumentMapper {
         );
     }
 
+    // 문서 엔티티를 상세 응답 DTO로 변환하는 매퍼다.
     public DocumentDetailResponse toDetailResponse(Document document) {
         return new DocumentDetailResponse(
                 document.getId(),
@@ -37,6 +39,7 @@ public class DocumentMapper {
         );
     }
 
+    // 문서 엔티티를 목록 응답 DTO로 변환하는 매퍼다.
     public DocumentSummaryResponse toSummaryResponse(Document document) {
         return new DocumentSummaryResponse(
                 document.getId(),
