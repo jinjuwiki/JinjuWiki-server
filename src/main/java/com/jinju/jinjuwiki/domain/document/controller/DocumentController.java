@@ -50,10 +50,10 @@ public class DocumentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
     }
 
-    @GetMapping("/{documentId}")
+    @GetMapping("/{id}")
     @Operation(summary = "문서 상세 조회", description = "문서 상세 정보와 내용을 조회합니다.")
-    public ResponseEntity<ApiResponse<DocumentDetailResponse>> getDocument(@PathVariable Long documentId) {
-        return ResponseEntity.ok(ApiResponse.of(documentService.getDocument(documentId)));
+    public ResponseEntity<ApiResponse<DocumentDetailResponse>> getDocument(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.of(documentService.getDocument(id)));
     }
 
     @GetMapping
@@ -77,31 +77,31 @@ public class DocumentController {
         return ResponseEntity.ok(ApiResponse.of(documentService.searchDocuments(keyword, categoryId, page, size)));
     }
 
-    @PutMapping("/{documentId}")
+    @PutMapping("/{id}")
     @Operation(
             summary = "문서 수정",
             description = "작성자 본인의 문서를 수정합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<ApiResponse<DocumentDetailResponse>> updateDocument(
-            @PathVariable Long documentId,
+            @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody DocumentUpdateRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.of(documentService.updateDocument(documentId, request, userPrincipal.getId())));
+        return ResponseEntity.ok(ApiResponse.of(documentService.updateDocument(id, request, userPrincipal.getId())));
     }
 
-    @DeleteMapping("/{documentId}")
+    @DeleteMapping("/{id}")
     @Operation(
             summary = "문서 삭제",
             description = "작성자 본인의 문서를 삭제합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     public ResponseEntity<Void> deleteDocument(
-            @PathVariable Long documentId,
+            @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
-        documentService.deleteDocument(documentId, userPrincipal.getId());
+        documentService.deleteDocument(id, userPrincipal.getId());
         return ResponseEntity.noContent().build();
     }
 }

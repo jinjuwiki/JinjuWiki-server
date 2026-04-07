@@ -11,13 +11,13 @@ public interface DocumentService {
 
     DocumentCreateResponse createDocument(DocumentCreateRequest request, Long currentUserId);
 
-    DocumentDetailResponse getDocument(Long documentId);
+    DocumentDetailResponse getDocument(Long id);
 
     PageResponse<DocumentSummaryResponse> getDocuments(Long categoryId, int page, int size);
 
     PageResponse<DocumentSummaryResponse> searchDocuments(String keyword, Long categoryId, int page, int size);
 
-    DocumentDetailResponse updateDocument(Long documentId, DocumentUpdateRequest request, Long currentUserId);
+    DocumentDetailResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId);
 
-    void deleteDocument(Long documentId, Long currentUserId);
+    void deleteDocument(Long id, Long currentUserId);
 }
