@@ -29,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 // 로그인/회원가입 로직 처리 클래스
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true) // 기본은 조히
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
