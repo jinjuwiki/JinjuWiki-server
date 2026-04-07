@@ -13,13 +13,10 @@ import com.jinju.jinjuwiki.domain.auth.service.EmailSender;
 import com.jinju.jinjuwiki.domain.category.entity.Category;
 import com.jinju.jinjuwiki.domain.category.repository.CategoryRepository;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentCreateRequest;
-import com.jinju.jinjuwiki.domain.document.dto.response.DocumentCreateResponse;
-import com.jinju.jinjuwiki.domain.document.dto.response.DocumentDetailResponse;
-import com.jinju.jinjuwiki.domain.document.dto.response.DocumentSummaryResponse;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
+import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.global.error.BusinessException;
 import com.jinju.jinjuwiki.global.error.ErrorCode;
-import com.jinju.jinjuwiki.global.response.PageResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +24,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.domain.Page;
 import org.springframework.transaction.annotation.Transactional;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 
@@ -73,14 +71,14 @@ class DocumentServiceTest {
         SignupResponse user = authService.signup(new SignupRequest("doc1@test.com", "password123", "docUser"));
         Category category = getCategory(SCHOOL);
 
-        DocumentCreateResponse response = documentService.createDocument(
+        Document response = documentService.createDocument(
                 new DocumentCreateRequest("문서 제목", "문서 본문", category.getId()),
                 user.userId()
         );
 
-        assertThat(response.documentId()).isNotNull();
-        assertThat(response.authorNickname()).isEqualTo("docUser");
-        assertThat(response.categoryName()).isEqualTo("학교");
+        assertThat(response.getId()).isNotNull();
+        assertThat(response.getAuthor().getNickname()).isEqualTo("docUser");
+        assertThat(response.getCategory().getName()).isEqualTo("학교");
     }
 
     @Test
@@ -103,15 +101,15 @@ class DocumentServiceTest {
         verifyEmail("doc2@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc2@test.com", "password123", "docUser2"));
         Category category = getCategory(STUDENT);
-        DocumentCreateResponse created = documentService.createDocument(
+        Document created = documentService.createDocument(
                 new DocumentCreateRequest("수학 공부법", "개념부터 반복", category.getId()),
                 user.userId()
         );
 
-        DocumentDetailResponse response = documentService.getDocument(created.documentId());
+        Document response = documentService.getDocument(created.getId());
 
-        assertThat(response.documentId()).isEqualTo(created.documentId());
-        assertThat(response.viewCount()).isEqualTo(1L);
+        assertThat(response.getId()).isEqualTo(created.getId());
+        assertThat(response.getViewCount()).isEqualTo(1L);
     }
 
     @Test
@@ -124,10 +122,10 @@ class DocumentServiceTest {
         documentService.createDocument(new DocumentCreateRequest("첫 번째 글", "내용 1", category.getId()), user.userId());
         documentService.createDocument(new DocumentCreateRequest("두 번째 글", "내용 2", category.getId()), user.userId());
 
-        PageResponse<DocumentSummaryResponse> response = documentService.getDocuments(category.getId(), 0, 10);
+        Page<Document> response = documentService.getDocuments(category.getId(), 0, 10);
 
-        assertThat(response.content()).hasSize(2);
-        assertThat(response.content().get(0).title()).isEqualTo("두 번째 글");
+        assertThat(response.getContent()).hasSize(2);
+        assertThat(response.getContent().get(0).getTitle()).isEqualTo("두 번째 글");
     }
 
     @Test
@@ -137,20 +135,20 @@ class DocumentServiceTest {
         SignupResponse user = authService.signup(new SignupRequest("doc4@test.com", "password123", "docUser4"));
         Category category = getCategory(SCHOOL);
         Category updatedCategory = getCategory(TEACHER);
-        DocumentCreateResponse created = documentService.createDocument(
+        Document created = documentService.createDocument(
                 new DocumentCreateRequest("원래 제목", "원래 본문", category.getId()),
                 user.userId()
         );
 
-        DocumentDetailResponse response = documentService.updateDocument(
-                created.documentId(),
+        Document response = documentService.updateDocument(
+                created.getId(),
                 new DocumentUpdateRequest("수정 제목", "수정 본문", updatedCategory.getId()),
                 user.userId()
         );
 
-        assertThat(response.title()).isEqualTo("수정 제목");
-        assertThat(response.content()).isEqualTo("수정 본문");
-        assertThat(response.categoryName()).isEqualTo(TEACHER);
+        assertThat(response.getTitle()).isEqualTo("수정 제목");
+        assertThat(response.getContent()).isEqualTo("수정 본문");
+        assertThat(response.getCategory().getName()).isEqualTo(TEACHER);
     }
 
     @Test
@@ -161,13 +159,13 @@ class DocumentServiceTest {
         verifyEmail("doc6@test.com");
         SignupResponse otherUser = authService.signup(new SignupRequest("doc6@test.com", "password123", "other6"));
         Category category = getCategory(SCHOOL);
-        DocumentCreateResponse created = documentService.createDocument(
+        Document created = documentService.createDocument(
                 new DocumentCreateRequest("제목", "본문", category.getId()),
                 author.userId()
         );
 
         assertThatThrownBy(() -> documentService.updateDocument(
-                created.documentId(),
+                created.getId(),
                 new DocumentUpdateRequest("수정 제목", "수정 본문", category.getId()),
                 otherUser.userId()
         ))
@@ -182,14 +180,14 @@ class DocumentServiceTest {
         verifyEmail("doc7@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc7@test.com", "password123", "docUser7"));
         Category category = getCategory(ETC);
-        DocumentCreateResponse created = documentService.createDocument(
+        Document created = documentService.createDocument(
                 new DocumentCreateRequest("삭제 제목", "삭제 본문", category.getId()),
                 user.userId()
         );
 
-        documentService.deleteDocument(created.documentId(), user.userId());
+        documentService.deleteDocument(created.getId(), user.userId());
 
-        assertThat(documentRepository.findById(created.documentId())).isEmpty();
+        assertThat(documentRepository.findById(created.getId())).isEmpty();
     }
 
     @Test
@@ -200,12 +198,12 @@ class DocumentServiceTest {
         verifyEmail("doc9@test.com");
         SignupResponse otherUser = authService.signup(new SignupRequest("doc9@test.com", "password123", "other9"));
         Category category = getCategory(SCHOOL);
-        DocumentCreateResponse created = documentService.createDocument(
+        Document created = documentService.createDocument(
                 new DocumentCreateRequest("삭제 전 제목", "삭제 전 본문", category.getId()),
                 author.userId()
         );
 
-        assertThatThrownBy(() -> documentService.deleteDocument(created.documentId(), otherUser.userId()))
+        assertThatThrownBy(() -> documentService.deleteDocument(created.getId(), otherUser.userId()))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.FORBIDDEN_DOCUMENT_ACCESS);
@@ -228,10 +226,10 @@ class DocumentServiceTest {
                 user.userId()
         );
 
-        PageResponse<DocumentSummaryResponse> response = documentService.searchDocuments("공부", null, 0, 10);
+        Page<Document> response = documentService.searchDocuments("공부", null, 0, 10);
 
-        assertThat(response.content()).hasSize(1);
-        assertThat(response.content().get(0).title()).isEqualTo("수학 공부법");
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getContent().get(0).getTitle()).isEqualTo("수학 공부법");
     }
 
     @Test
@@ -251,11 +249,11 @@ class DocumentServiceTest {
                 user.userId()
         );
 
-        PageResponse<DocumentSummaryResponse> response =
+        Page<Document> response =
                 documentService.searchDocuments("시험", studyCategory.getId(), 0, 10);
 
-        assertThat(response.content()).hasSize(1);
-        assertThat(response.content().get(0).categoryName()).isEqualTo(STUDENT);
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getContent().get(0).getCategory().getName()).isEqualTo(STUDENT);
     }
 
     @Test
