@@ -42,12 +42,12 @@ public class Document extends BaseEntity {
     // LAZY 사용하여 성능 최적화(EAGER 사용시 Category + User 모두 조회)
     // N : 1(Document : User) 관계
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "author_id", nullable = false)
+    @JoinColumn(name = "fk_author_id", nullable = false)
     private User author;
 
     // 문서 여러개 -> 카테고리 1개
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "category_id", nullable = false)
+    @JoinColumn(name = "fk_category_id", nullable = false)
     private Category category;
 
     public void increaseViewCount() {
