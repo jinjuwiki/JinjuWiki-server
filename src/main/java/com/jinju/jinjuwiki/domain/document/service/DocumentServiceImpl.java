@@ -2,11 +2,11 @@ package com.jinju.jinjuwiki.domain.document.service;
 
 import com.jinju.jinjuwiki.domain.category.entity.Category;
 import com.jinju.jinjuwiki.domain.category.repository.CategoryRepository;
-import com.jinju.jinjuwiki.domain.document.dto.DocumentCreateRequest;
-import com.jinju.jinjuwiki.domain.document.dto.DocumentCreateResponse;
-import com.jinju.jinjuwiki.domain.document.dto.DocumentDetailResponse;
-import com.jinju.jinjuwiki.domain.document.dto.DocumentSummaryResponse;
-import com.jinju.jinjuwiki.domain.document.dto.DocumentUpdateRequest;
+import com.jinju.jinjuwiki.domain.document.dto.request.DocumentCreateRequest;
+import com.jinju.jinjuwiki.domain.document.dto.response.DocumentCreateResponse;
+import com.jinju.jinjuwiki.domain.document.dto.response.DocumentDetailResponse;
+import com.jinju.jinjuwiki.domain.document.dto.response.DocumentSummaryResponse;
+import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.user.entity.User;

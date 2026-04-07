@@ -1,6 +1,6 @@
 package com.jinju.jinjuwiki.domain.category.service;
 
-import com.jinju.jinjuwiki.domain.category.dto.CategoryResponse;
+import com.jinju.jinjuwiki.domain.category.dto.response.CategoryResponse;
 import com.jinju.jinjuwiki.domain.category.repository.CategoryRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

@@ -1,6 +1,6 @@
 package com.jinju.jinjuwiki.domain.category.controller;
 
-import com.jinju.jinjuwiki.domain.category.dto.CategoryResponse;
+import com.jinju.jinjuwiki.domain.category.dto.response.CategoryResponse;
 import com.jinju.jinjuwiki.domain.category.service.CategoryService;
 import com.jinju.jinjuwiki.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;

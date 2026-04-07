@@ -1,4 +1,4 @@
-package com.jinju.jinjuwiki.domain.document.dto;
+package com.jinju.jinjuwiki.domain.document.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

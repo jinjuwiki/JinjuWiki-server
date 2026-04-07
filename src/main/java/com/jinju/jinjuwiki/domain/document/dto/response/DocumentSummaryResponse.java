@@ -1,4 +1,4 @@
-package com.jinju.jinjuwiki.domain.document.dto;
+package com.jinju.jinjuwiki.domain.document.dto.response;
 
 import java.time.LocalDateTime;
 
