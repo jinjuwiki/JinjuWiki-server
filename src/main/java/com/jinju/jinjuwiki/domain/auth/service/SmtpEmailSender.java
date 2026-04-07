@@ -52,11 +52,11 @@ public class SmtpEmailSender implements EmailSender {
                 <body style="margin:0; padding:0; background-color:#f4f7fb; font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif; color:#1f2937;">
                     <div style="width:100%%; background-color:#f4f7fb; padding:40px 16px;">
                         <div style="max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:24px; overflow:hidden; box-shadow:0 18px 48px rgba(15, 23, 42, 0.08);">
-                            <div style="background:linear-gradient(135deg, #0f172a 0%%, #1d4ed8 100%%); padding:32px 40px; text-align:center;">
+                            <div style="background:linear-gradient(135deg, #00A0E9 0%%, #0284c7 100%%); padding:32px 40px; text-align:center;">
                                 <div style="display:inline-block; padding:8px 14px; border-radius:999px; background-color:rgba(255,255,255,0.14); color:#eff6ff; font-size:13px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">
                                     JinjuWiki
                                 </div>
-                                <h1 style="margin:18px 0 0; color:#ffffff; font-size:30px; line-height:1.35; font-weight:800;">
+                                <h1 style="margin:18px 0 0; color:#ffffff; font-size:30px; line-height:1.35; font-weight:600;">
                                     이메일 인증번호 안내
                                 </h1>
                             </div>
