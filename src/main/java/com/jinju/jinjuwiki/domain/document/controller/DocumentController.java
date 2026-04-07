@@ -53,7 +53,8 @@ public class DocumentController {
     @GetMapping("/{id}")
     @Operation(summary = "문서 상세 조회", description = "문서 상세 정보와 내용을 조회합니다.")
     public ResponseEntity<ApiResponse<DocumentDetailResponse>> getDocument(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.of(documentService.getDocument(id)));
+        DocumentDetailResponse response = documentService.getDocument(id);
+        return ResponseEntity.ok(ApiResponse.of(response));
     }
 
     @GetMapping
@@ -63,7 +64,8 @@ public class DocumentController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(ApiResponse.of(documentService.getDocuments(categoryId, page, size)));
+        PageResponse<DocumentSummaryResponse> response = documentService.getDocuments(categoryId, page, size);
+        return ResponseEntity.ok(ApiResponse.of(response));
     }
 
     @GetMapping("/search")
@@ -74,7 +76,9 @@ public class DocumentController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(ApiResponse.of(documentService.searchDocuments(keyword, categoryId, page, size)));
+        PageResponse<DocumentSummaryResponse> response =
+                documentService.searchDocuments(keyword, categoryId, page, size);
+        return ResponseEntity.ok(ApiResponse.of(response));
     }
 
     @PutMapping("/{id}")
@@ -88,7 +92,8 @@ public class DocumentController {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody DocumentUpdateRequest request
     ) {
-        return ResponseEntity.ok(ApiResponse.of(documentService.updateDocument(id, request, userPrincipal.getId())));
+        DocumentDetailResponse response = documentService.updateDocument(id, request, userPrincipal.getId());
+        return ResponseEntity.ok(ApiResponse.of(response));
     }
 
     @DeleteMapping("/{id}")

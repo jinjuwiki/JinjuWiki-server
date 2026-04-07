@@ -24,6 +24,7 @@ public class CategoryController {
     @GetMapping
     @Operation(summary = "카테고리 목록 조회", description = "문서 작성과 탐색에 사용하는 카테고리 목록을 조회합니다.")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getCategories() {
-        return ResponseEntity.ok(ApiResponse.of(categoryService.getCategories()));
+        List<CategoryResponse> response = categoryService.getCategories();
+        return ResponseEntity.ok(ApiResponse.of(response));
     }
 }
