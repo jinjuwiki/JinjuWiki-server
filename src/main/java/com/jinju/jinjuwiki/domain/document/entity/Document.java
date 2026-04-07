@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,6 +20,8 @@ import lombok.NoArgsConstructor;
 // JPA 표준 패턴 기반 문서 Entity 클래스
 @Getter
 @Entity
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Document extends BaseEntity {
 
@@ -32,28 +35,20 @@ public class Document extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Builder.Default
     @Column(nullable = false)
-    private Long viewCount;
+    private Long viewCount = 0L;
 
     // LAZY 사용하여 성능 최적화(EAGER 사용시 Category + User 모두 조회)
     // N : 1(Document : User) 관계
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "author_id", nullable = false)
+    @JoinColumn(name = "fk_author_id", nullable = false)
     private User author;
 
     // 문서 여러개 -> 카테고리 1개
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "category_id", nullable = false)
+    @JoinColumn(name = "fk_category_id", nullable = false)
     private Category category;
-
-    @Builder
-    private Document(String title, String content, User author, Category category) {
-        this.title = title;
-        this.content = content;
-        this.author = author;
-        this.category = category;
-        this.viewCount = 0L;
-    }
 
     public void increaseViewCount() {
         this.viewCount++;
