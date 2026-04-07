@@ -19,5 +19,3 @@ jwt:
 app:
   auth:
     email-verification-expiration-minutes: 5
-  mail:
-    from: test@jinjuwiki.local

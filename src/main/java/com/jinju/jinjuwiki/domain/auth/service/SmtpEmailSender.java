@@ -15,7 +15,7 @@ public class SmtpEmailSender implements EmailSender {
 
     private final JavaMailSender mailSender;
 
-    @Value("${app.mail.from}")
+    @Value("${app.mail.from:no-reply@jinjuwiki.local}")
     private String from;
 
     @Override
