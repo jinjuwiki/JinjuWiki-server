@@ -31,6 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
+    // Authorization 헤더에서 사용하는 JWT 토큰 값
+    private static final String TOKEN_TYPE_BEARER = "Bearer";
+
     private final UserRepository userRepository;
     private final EmailVerificationRepository emailVerificationRepository;
     private final EmailSender emailSender;
@@ -116,7 +119,7 @@ public class AuthServiceImpl implements AuthService {
 
         return new LoginResponse(
                 accessToken,
-                "Bearer",
+                TOKEN_TYPE_BEARER,
                 user.getId(),
                 user.getEmail(),
                 user.getNickname(),
