@@ -1,6 +1,7 @@
 package com.jinju.jinjuwiki.global.config;
 
 import com.jinju.jinjuwiki.domain.category.entity.Category;
+import com.jinju.jinjuwiki.domain.category.entity.CategoryType;
 import com.jinju.jinjuwiki.domain.category.repository.CategoryRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -12,13 +13,17 @@ import org.springframework.context.annotation.Configuration;
 @RequiredArgsConstructor
 public class CategoryInitializer {
 
+    // 기본 카테고리 이름 목록
+    private static final List<String> DEFAULT_CATEGORIES = List.of(CategoryType.values()).stream()
+            .map(CategoryType::getDisplayName)
+            .toList();
+
     private final CategoryRepository categoryRepository;
 
     @Bean
     public CommandLineRunner initCategories() {
         return args -> {
-            List<String> defaultCategories = List.of("학교", "학생", "사건사고", "선생님", "기타"); // 카테고리 수정 가능
-            List<Category> categories = defaultCategories.stream()
+            List<Category> categories = DEFAULT_CATEGORIES.stream()
                     .filter(name -> !categoryRepository.existsByName(name))
                     .map(name -> Category.builder().name(name).build())
                     .toList();
