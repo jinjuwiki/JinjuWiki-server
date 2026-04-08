@@ -36,6 +36,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final EmailVerificationRepository emailVerificationRepository;
+    private final AuthValidationService authValidationService;
     private final EmailSender emailSender;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -46,7 +47,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public EmailVerificationSendResponse sendVerificationCode(EmailVerificationSendRequest request) {
-        validateEmailAvailable(request.email());
+        authValidationService.validateEmailAvailable(request.email());
 
         String code = generateVerificationCode();
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(emailVerificationExpirationMinutes);
@@ -89,8 +90,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public SignupResponse signup(SignupRequest request) {
-        validateDuplicate(request);
-        validateEmailVerified(request.email());
+        authValidationService.validateDuplicateSignup(request);
+        authValidationService.validateEmailVerified(request.email());
 
         User user = User.builder()
                 .email(request.email())
@@ -125,36 +126,6 @@ public class AuthServiceImpl implements AuthService {
                 user.getNickname(),
                 user.getRole().name()
         );
-    }
-
-    // 중복 확인, 동시성 문제 발견( DB unique 혹은 다른 방법 모색해서 보완 필요 )
-    private void validateDuplicate(SignupRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
-        }
-
-        if (userRepository.existsByNickname(request.nickname())) {
-            throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
-        }
-    }
-
-    private void validateEmailAvailable(String email) {
-        if (userRepository.existsByEmail(email)) {
-            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
-        }
-    }
-
-    private void validateEmailVerified(String email) {
-        EmailVerification verification = emailVerificationRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED));
-
-        if (verification.isExpired(LocalDateTime.now())) {
-            throw new BusinessException(ErrorCode.EMAIL_VERIFICATION_EXPIRED);
-        }
-
-        if (!verification.isVerified()) {
-            throw new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED);
-        }
     }
 
     private String generateVerificationCode() {
