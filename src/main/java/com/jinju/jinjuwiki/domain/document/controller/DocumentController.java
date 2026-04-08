@@ -40,9 +40,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 public class DocumentController {
 
     private final DocumentService documentService;
-    private final DocumentCreateResponseMapper documentCreateResponseMapper;
-    private final DocumentDetailResponseMapper documentDetailResponseMapper;
-    private final DocumentSummaryResponseMapper documentSummaryResponseMapper;
 
     @PostMapping
     @Operation(
@@ -55,7 +52,7 @@ public class DocumentController {
             @Valid @RequestBody DocumentCreateRequest request
     ) {
         Document document = documentService.createDocument(request, userPrincipal.getId());
-        DocumentCreateResponse response = documentCreateResponseMapper.toResponse(document);
+        DocumentCreateResponse response = DocumentCreateResponseMapper.toResponse(document);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
     }
 
@@ -63,7 +60,7 @@ public class DocumentController {
     @Operation(summary = "문서 상세 조회", description = "문서 상세 정보와 내용을 조회합니다.")
     public ResponseEntity<ApiResponse<DocumentDetailResponse>> getDocument(@PathVariable Long id) {
         Document document = documentService.getDocument(id);
-        DocumentDetailResponse response = documentDetailResponseMapper.toResponse(document);
+        DocumentDetailResponse response = DocumentDetailResponseMapper.toResponse(document);
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
@@ -76,7 +73,7 @@ public class DocumentController {
     ) {
         Page<Document> documents = documentService.getDocuments(categoryId, page, size);
         PageResponse<DocumentSummaryResponse> response =
-                PageResponse.from(documents.map(documentSummaryResponseMapper::toResponse));
+                PageResponse.from(documents.map(DocumentSummaryResponseMapper::toResponse));
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
@@ -90,7 +87,7 @@ public class DocumentController {
     ) {
         Page<Document> documents = documentService.searchDocuments(keyword, categoryId, page, size);
         PageResponse<DocumentSummaryResponse> response =
-                PageResponse.from(documents.map(documentSummaryResponseMapper::toResponse));
+                PageResponse.from(documents.map(DocumentSummaryResponseMapper::toResponse));
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
@@ -106,7 +103,7 @@ public class DocumentController {
             @Valid @RequestBody DocumentUpdateRequest request
     ) {
         Document document = documentService.updateDocument(id, request, userPrincipal.getId());
-        DocumentDetailResponse response = documentDetailResponseMapper.toResponse(document);
+        DocumentDetailResponse response = DocumentDetailResponseMapper.toResponse(document);
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
