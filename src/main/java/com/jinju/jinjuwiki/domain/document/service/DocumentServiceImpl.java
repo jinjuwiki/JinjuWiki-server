@@ -3,18 +3,13 @@ package com.jinju.jinjuwiki.domain.document.service;
 import com.jinju.jinjuwiki.domain.category.entity.Category;
 import com.jinju.jinjuwiki.domain.category.repository.CategoryRepository;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentCreateRequest;
-import com.jinju.jinjuwiki.domain.document.dto.response.DocumentCreateResponse;
-import com.jinju.jinjuwiki.domain.document.dto.response.DocumentDetailResponse;
-import com.jinju.jinjuwiki.domain.document.dto.response.DocumentSummaryResponse;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
-import com.jinju.jinjuwiki.domain.document.mapper.DocumentMapper;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import com.jinju.jinjuwiki.global.error.BusinessException;
 import com.jinju.jinjuwiki.global.error.ErrorCode;
-import com.jinju.jinjuwiki.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,11 +25,10 @@ public class DocumentServiceImpl implements DocumentService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final DocumentDomainService documentDomainService;
-    private final DocumentMapper documentMapper;
 
     @Override
     @Transactional
-    public DocumentCreateResponse createDocument(DocumentCreateRequest request, Long currentUserId) {
+    public Document createDocument(DocumentCreateRequest request, Long currentUserId) {
         User author = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         Category category = categoryRepository.findById(request.categoryId())
@@ -47,31 +41,28 @@ public class DocumentServiceImpl implements DocumentService {
                 .category(category)
                 .build();
 
-        Document savedDocument = documentRepository.save(document);
-        return documentMapper.toCreateResponse(savedDocument);
+        return documentRepository.save(document);
     }
 
     @Override
     @Transactional
-    public DocumentDetailResponse getDocument(Long id) {
+    public Document getDocument(Long id) {
         Document document = documentDomainService.getDocument(id);
 
         document.increaseViewCount();
-        return documentMapper.toDetailResponse(document);
+        return document;
     }
 
     @Override
-    public PageResponse<DocumentSummaryResponse> getDocuments(Long categoryId, int page, int size) {
+    public Page<Document> getDocuments(Long categoryId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Document> documents = categoryId == null
+        return categoryId == null
                 ? documentRepository.findAllByOrderByCreatedAtDesc(pageable)
                 : documentRepository.findByCategoryIdOrderByCreatedAtDesc(categoryId, pageable);
-
-        return PageResponse.from(documents.map(documentMapper::toSummaryResponse));
     }
 
     @Override
-    public PageResponse<DocumentSummaryResponse> searchDocuments(String keyword, Long categoryId, int page, int size) {
+    public Page<Document> searchDocuments(String keyword, Long categoryId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         String normalizedKeyword = keyword == null ? "" : keyword.trim();
 
@@ -79,16 +70,14 @@ public class DocumentServiceImpl implements DocumentService {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
 
-        Page<Document> documents = categoryId == null
+        return categoryId == null
                 ? documentRepository.searchByKeyword(normalizedKeyword, pageable)
                 : documentRepository.searchByCategoryAndKeyword(categoryId, normalizedKeyword, pageable);
-
-        return PageResponse.from(documents.map(documentMapper::toSummaryResponse));
     }
 
     @Override
     @Transactional
-    public DocumentDetailResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId) {
+    public Document updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId) {
         Document document = documentDomainService.getDocument(id);
         documentDomainService.validateAuthor(document, currentUserId);
 
@@ -96,7 +85,7 @@ public class DocumentServiceImpl implements DocumentService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
         document.update(request.title(), request.content(), category);
-        return documentMapper.toDetailResponse(document);
+        return document;
     }
 
     @Override

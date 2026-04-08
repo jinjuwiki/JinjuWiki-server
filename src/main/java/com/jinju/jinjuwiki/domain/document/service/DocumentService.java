@@ -1,23 +1,21 @@
 package com.jinju.jinjuwiki.domain.document.service;
 
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentCreateRequest;
-import com.jinju.jinjuwiki.domain.document.dto.response.DocumentCreateResponse;
-import com.jinju.jinjuwiki.domain.document.dto.response.DocumentDetailResponse;
-import com.jinju.jinjuwiki.domain.document.dto.response.DocumentSummaryResponse;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
-import com.jinju.jinjuwiki.global.response.PageResponse;
+import com.jinju.jinjuwiki.domain.document.entity.Document;
+import org.springframework.data.domain.Page;
 
 public interface DocumentService {
 
-    DocumentCreateResponse createDocument(DocumentCreateRequest request, Long currentUserId);
+    Document createDocument(DocumentCreateRequest request, Long currentUserId);
 
-    DocumentDetailResponse getDocument(Long id);
+    Document getDocument(Long id);
 
-    PageResponse<DocumentSummaryResponse> getDocuments(Long categoryId, int page, int size);
+    Page<Document> getDocuments(Long categoryId, int page, int size);
 
-    PageResponse<DocumentSummaryResponse> searchDocuments(String keyword, Long categoryId, int page, int size);
+    Page<Document> searchDocuments(String keyword, Long categoryId, int page, int size);
 
-    DocumentDetailResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId);
+    Document updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId);
 
     void deleteDocument(Long id, Long currentUserId);
 }

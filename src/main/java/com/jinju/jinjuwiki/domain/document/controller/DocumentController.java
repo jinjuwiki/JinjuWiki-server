@@ -5,6 +5,10 @@ import com.jinju.jinjuwiki.domain.document.dto.response.DocumentCreateResponse;
 import com.jinju.jinjuwiki.domain.document.dto.response.DocumentDetailResponse;
 import com.jinju.jinjuwiki.domain.document.dto.response.DocumentSummaryResponse;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
+import com.jinju.jinjuwiki.domain.document.entity.Document;
+import com.jinju.jinjuwiki.domain.document.mapper.DocumentCreateResponseMapper;
+import com.jinju.jinjuwiki.domain.document.mapper.DocumentDetailResponseMapper;
+import com.jinju.jinjuwiki.domain.document.mapper.DocumentSummaryResponseMapper;
 import com.jinju.jinjuwiki.domain.document.service.DocumentService;
 import com.jinju.jinjuwiki.global.response.ApiResponse;
 import com.jinju.jinjuwiki.global.response.PageResponse;
@@ -16,6 +20,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,14 +51,16 @@ public class DocumentController {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody DocumentCreateRequest request
     ) {
-        DocumentCreateResponse response = documentService.createDocument(request, userPrincipal.getId());
+        Document document = documentService.createDocument(request, userPrincipal.getId());
+        DocumentCreateResponse response = DocumentCreateResponseMapper.toResponse(document);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "문서 상세 조회", description = "문서 상세 정보와 내용을 조회합니다.")
     public ResponseEntity<ApiResponse<DocumentDetailResponse>> getDocument(@PathVariable Long id) {
-        DocumentDetailResponse response = documentService.getDocument(id);
+        Document document = documentService.getDocument(id);
+        DocumentDetailResponse response = DocumentDetailResponseMapper.toResponse(document);
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
@@ -64,7 +71,9 @@ public class DocumentController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        PageResponse<DocumentSummaryResponse> response = documentService.getDocuments(categoryId, page, size);
+        Page<Document> documents = documentService.getDocuments(categoryId, page, size);
+        PageResponse<DocumentSummaryResponse> response =
+                PageResponse.from(documents.map(DocumentSummaryResponseMapper::toResponse));
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
@@ -76,8 +85,9 @@ public class DocumentController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
+        Page<Document> documents = documentService.searchDocuments(keyword, categoryId, page, size);
         PageResponse<DocumentSummaryResponse> response =
-                documentService.searchDocuments(keyword, categoryId, page, size);
+                PageResponse.from(documents.map(DocumentSummaryResponseMapper::toResponse));
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
@@ -92,7 +102,8 @@ public class DocumentController {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody DocumentUpdateRequest request
     ) {
-        DocumentDetailResponse response = documentService.updateDocument(id, request, userPrincipal.getId());
+        Document document = documentService.updateDocument(id, request, userPrincipal.getId());
+        DocumentDetailResponse response = DocumentDetailResponseMapper.toResponse(document);
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
