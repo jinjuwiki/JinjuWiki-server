@@ -1,6 +1,7 @@
 package com.jinju.jinjuwiki.domain.user.repository;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.entity.UserRole;
@@ -21,6 +22,7 @@ class UserRepositoryTest {
     @Test
     @DisplayName("DB unique 제약으로 이메일이 중복되면 데이터 무결성 예외가 발생한다.")
     void duplicateEmailCanFailAtDatabaseLevel() {
+        // given
         userRepository.save(User.builder()
                 .email("dbdup@test.com")
                 .password("encoded-password")
@@ -28,12 +30,15 @@ class UserRepositoryTest {
                 .role(UserRole.USER)
                 .build());
 
-        assertThatThrownBy(() -> userRepository.saveAndFlush(User.builder()
+        // when
+        Throwable thrown = catchThrowable(() -> userRepository.saveAndFlush(User.builder()
                 .email("dbdup@test.com")
                 .password("encoded-password")
                 .nickname("dbUser2")
                 .role(UserRole.USER)
-                .build()))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                .build()));
+
+        // then
+        assertThat(thrown).isInstanceOf(DataIntegrityViolationException.class);
     }
 }

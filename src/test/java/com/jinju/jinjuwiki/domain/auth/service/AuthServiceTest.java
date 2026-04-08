@@ -1,7 +1,7 @@
 package com.jinju.jinjuwiki.domain.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
@@ -45,11 +45,14 @@ class AuthServiceTest {
     @Test
     @DisplayName("회원가입에 성공하면 사용자 기본 정보를 반환한다.")
     void signupSuccess() {
+        // given
         verifyEmail("user1@test.com");
         SignupRequest request = new SignupRequest("user1@test.com", "password123", "user1");
 
+        // when
         SignupResponse response = authService.signup(request);
 
+        // then
         assertThat(response.userId()).isNotNull();
         assertThat(response.email()).isEqualTo("user1@test.com");
         assertThat(response.nickname()).isEqualTo("user1");
@@ -58,10 +61,17 @@ class AuthServiceTest {
     @Test
     @DisplayName("이미 존재하는 이메일로 회원가입하면 예외가 발생한다.")
     void signupDuplicateEmail() {
+        // given
         verifyEmail("dup@test.com");
         authService.signup(new SignupRequest("dup@test.com", "password123", "user1"));
 
-        assertThatThrownBy(() -> authService.signup(new SignupRequest("dup@test.com", "password123", "user2")))
+        // when
+        Throwable thrown = catchThrowable(
+                () -> authService.signup(new SignupRequest("dup@test.com", "password123", "user2"))
+        );
+
+        // then
+        assertThat(thrown)
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.DUPLICATE_EMAIL);
@@ -70,11 +80,14 @@ class AuthServiceTest {
     @Test
     @DisplayName("로그인에 성공하면 사용자 정보를 반환한다.")
     void loginSuccess() {
+        // given
         verifyEmail("login@test.com");
         authService.signup(new SignupRequest("login@test.com", "password123", "loginUser"));
 
+        // when
         LoginResponse response = authService.login(new LoginRequest("login@test.com", "password123"));
 
+        // then
         assertThat(response.accessToken()).isNotBlank();
         assertThat(response.tokenType()).isEqualTo("Bearer");
         assertThat(response.email()).isEqualTo("login@test.com");
@@ -85,10 +98,17 @@ class AuthServiceTest {
     @Test
     @DisplayName("비밀번호가 다르면 로그인에 실패한다.")
     void loginFailWithInvalidPassword() {
+        // given
         verifyEmail("wrong@test.com");
         authService.signup(new SignupRequest("wrong@test.com", "password123", "wrongUser"));
 
-        assertThatThrownBy(() -> authService.login(new LoginRequest("wrong@test.com", "bad-password")))
+        // when
+        Throwable thrown = catchThrowable(
+                () -> authService.login(new LoginRequest("wrong@test.com", "bad-password"))
+        );
+
+        // then
+        assertThat(thrown)
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.INVALID_LOGIN);

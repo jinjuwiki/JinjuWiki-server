@@ -52,12 +52,15 @@ class UserControllerTest {
     @Test
     @DisplayName("로그인한 사용자는 자신의 프로필을 조회할 수 있다.")
     void getMyProfileSuccess() throws IOException, InterruptedException {
+        // given
         verifyEmail("profile@test.com");
         authService.signup(new SignupRequest("profile@test.com", "password123", "profileUser"));
         LoginResponse loginResponse = authService.login(new LoginRequest("profile@test.com", "password123"));
 
+        // when
         HttpResponse<String> response = sendProfileRequest("Bearer " + loginResponse.accessToken());
 
+        // then
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body()).contains("\"email\":\"profile@test.com\"");
         assertThat(response.body()).contains("\"nickname\":\"profileUser\"");
@@ -70,8 +73,10 @@ class UserControllerTest {
     @Test
     @DisplayName("인증 없이 프로필을 조회하면 401을 반환한다.")
     void getMyProfileUnauthorized() throws IOException, InterruptedException {
+        // when
         HttpResponse<String> response = sendProfileRequest(null);
 
+        // then
         assertThat(response.statusCode()).isEqualTo(401);
     }
 

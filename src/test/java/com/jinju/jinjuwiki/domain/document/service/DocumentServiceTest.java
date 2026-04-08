@@ -3,7 +3,7 @@ package com.jinju.jinjuwiki.domain.document.service;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.SignupRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.SignupResponse;
@@ -67,15 +67,18 @@ class DocumentServiceTest {
     @Test
     @DisplayName("문서를 생성하면 작성자와 카테고리 정보가 함께 반환된다.")
     void createDocumentSuccess() {
+        // given
         verifyEmail("doc1@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc1@test.com", "password123", "docUser"));
         Category category = getCategory(SCHOOL);
 
+        // when
         Document response = documentService.createDocument(
                 new DocumentCreateRequest("문서 제목", "문서 본문", category.getId()),
                 user.userId()
         );
 
+        // then
         assertThat(response.getId()).isNotNull();
         assertThat(response.getAuthor().getNickname()).isEqualTo("docUser");
         assertThat(response.getCategory().getName()).isEqualTo("학교");
@@ -84,12 +87,17 @@ class DocumentServiceTest {
     @Test
     @DisplayName("존재하지 않는 작성자 ID로 문서를 생성하면 예외가 발생한다.")
     void createDocumentFailWhenUserNotFound() {
+        // given
         Category category = getCategory(SCHOOL);
 
-        assertThatThrownBy(() -> documentService.createDocument(
+        // when
+        Throwable thrown = catchThrowable(() -> documentService.createDocument(
                 new DocumentCreateRequest("문서 제목", "문서 본문", category.getId()),
                 999L
-        ))
+        ));
+
+        // then
+        assertThat(thrown)
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.USER_NOT_FOUND);
@@ -98,6 +106,7 @@ class DocumentServiceTest {
     @Test
     @DisplayName("문서를 조회하면 조회수가 증가한다.")
     void getDocumentSuccess() {
+        // given
         verifyEmail("doc2@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc2@test.com", "password123", "docUser2"));
         Category category = getCategory(STUDENT);
@@ -106,8 +115,10 @@ class DocumentServiceTest {
                 user.userId()
         );
 
+        // when
         Document response = documentService.getDocument(created.getId());
 
+        // then
         assertThat(response.getId()).isEqualTo(created.getId());
         assertThat(response.getViewCount()).isEqualTo(1L);
     }
@@ -115,6 +126,7 @@ class DocumentServiceTest {
     @Test
     @DisplayName("문서 목록은 최신순으로 페이지 조회할 수 있다.")
     void getDocumentsSuccess() {
+        // given
         verifyEmail("doc3@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc3@test.com", "password123", "docUser3"));
         Category category = getCategory(INCIDENT);
@@ -122,8 +134,10 @@ class DocumentServiceTest {
         documentService.createDocument(new DocumentCreateRequest("첫 번째 글", "내용 1", category.getId()), user.userId());
         documentService.createDocument(new DocumentCreateRequest("두 번째 글", "내용 2", category.getId()), user.userId());
 
+        // when
         Page<Document> response = documentService.getDocuments(category.getId(), 0, 10);
 
+        // then
         assertThat(response.getContent()).hasSize(2);
         assertThat(response.getContent().get(0).getTitle()).isEqualTo("두 번째 글");
     }
@@ -131,6 +145,7 @@ class DocumentServiceTest {
     @Test
     @DisplayName("작성자는 자신의 문서를 수정할 수 있다.")
     void updateDocumentSuccess() {
+        // given
         verifyEmail("doc4@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc4@test.com", "password123", "docUser4"));
         Category category = getCategory(SCHOOL);
@@ -140,12 +155,14 @@ class DocumentServiceTest {
                 user.userId()
         );
 
+        // when
         Document response = documentService.updateDocument(
                 created.getId(),
                 new DocumentUpdateRequest("수정 제목", "수정 본문", updatedCategory.getId()),
                 user.userId()
         );
 
+        // then
         assertThat(response.getTitle()).isEqualTo("수정 제목");
         assertThat(response.getContent()).isEqualTo("수정 본문");
         assertThat(response.getCategory().getName()).isEqualTo(TEACHER);
@@ -154,6 +171,7 @@ class DocumentServiceTest {
     @Test
     @DisplayName("작성자가 아니면 문서를 수정할 수 없다.")
     void updateDocumentFailWhenNotAuthor() {
+        // given
         verifyEmail("doc5@test.com");
         SignupResponse author = authService.signup(new SignupRequest("doc5@test.com", "password123", "author5"));
         verifyEmail("doc6@test.com");
@@ -164,11 +182,15 @@ class DocumentServiceTest {
                 author.userId()
         );
 
-        assertThatThrownBy(() -> documentService.updateDocument(
+        // when
+        Throwable thrown = catchThrowable(() -> documentService.updateDocument(
                 created.getId(),
                 new DocumentUpdateRequest("수정 제목", "수정 본문", category.getId()),
                 otherUser.userId()
-        ))
+        ));
+
+        // then
+        assertThat(thrown)
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.FORBIDDEN_DOCUMENT_ACCESS);
@@ -177,6 +199,7 @@ class DocumentServiceTest {
     @Test
     @DisplayName("작성자는 자신의 문서를 삭제할 수 있다.")
     void deleteDocumentSuccess() {
+        // given
         verifyEmail("doc7@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc7@test.com", "password123", "docUser7"));
         Category category = getCategory(ETC);
@@ -185,14 +208,17 @@ class DocumentServiceTest {
                 user.userId()
         );
 
+        // when
         documentService.deleteDocument(created.getId(), user.userId());
 
+        // then
         assertThat(documentRepository.findById(created.getId())).isEmpty();
     }
 
     @Test
     @DisplayName("작성자가 아니면 문서를 삭제할 수 없다.")
     void deleteDocumentFailWhenNotAuthor() {
+        // given
         verifyEmail("doc8@test.com");
         SignupResponse author = authService.signup(new SignupRequest("doc8@test.com", "password123", "author8"));
         verifyEmail("doc9@test.com");
@@ -203,7 +229,11 @@ class DocumentServiceTest {
                 author.userId()
         );
 
-        assertThatThrownBy(() -> documentService.deleteDocument(created.getId(), otherUser.userId()))
+        // when
+        Throwable thrown = catchThrowable(() -> documentService.deleteDocument(created.getId(), otherUser.userId()));
+
+        // then
+        assertThat(thrown)
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.FORBIDDEN_DOCUMENT_ACCESS);
@@ -212,6 +242,7 @@ class DocumentServiceTest {
     @Test
     @DisplayName("키워드로 제목과 본문을 검색할 수 있다.")
     void searchDocumentsSuccess() {
+        // given
         verifyEmail("doc10@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc10@test.com", "password123", "docUser10"));
         Category schoolCategory = getCategory(SCHOOL);
@@ -226,8 +257,10 @@ class DocumentServiceTest {
                 user.userId()
         );
 
+        // when
         Page<Document> response = documentService.searchDocuments("공부", null, 0, 10);
 
+        // then
         assertThat(response.getContent()).hasSize(1);
         assertThat(response.getContent().get(0).getTitle()).isEqualTo("수학 공부법");
     }
@@ -235,6 +268,7 @@ class DocumentServiceTest {
     @Test
     @DisplayName("검색은 카테고리 필터와 함께 사용할 수 있다.")
     void searchDocumentsWithCategory() {
+        // given
         verifyEmail("doc11@test.com");
         SignupResponse user = authService.signup(new SignupRequest("doc11@test.com", "password123", "docUser11"));
         Category schoolCategory = getCategory(SCHOOL);
@@ -249,9 +283,11 @@ class DocumentServiceTest {
                 user.userId()
         );
 
+        // when
         Page<Document> response =
                 documentService.searchDocuments("시험", studyCategory.getId(), 0, 10);
 
+        // then
         assertThat(response.getContent()).hasSize(1);
         assertThat(response.getContent().get(0).getCategory().getName()).isEqualTo(STUDENT);
     }
@@ -259,7 +295,14 @@ class DocumentServiceTest {
     @Test
     @DisplayName("빈 검색어로 검색하면 예외가 발생한다.")
     void searchDocumentsFailWhenKeywordIsBlank() {
-        assertThatThrownBy(() -> documentService.searchDocuments("   ", null, 0, 10))
+        // given
+        String keyword = "   ";
+
+        // when
+        Throwable thrown = catchThrowable(() -> documentService.searchDocuments(keyword, null, 0, 10));
+
+        // then
+        assertThat(thrown)
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.INVALID_INPUT);
