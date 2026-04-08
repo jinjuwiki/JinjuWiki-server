@@ -53,7 +53,7 @@ public class DocumentController {
     ) {
         Document document = documentService.createDocument(request, userPrincipal.getId());
         DocumentCreateResponse response = DocumentCreateResponseMapper.toResponse(document);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of("문서가 생성되었습니다.", response));
     }
 
     @GetMapping("/{id}")
@@ -104,7 +104,7 @@ public class DocumentController {
     ) {
         Document document = documentService.updateDocument(id, request, userPrincipal.getId());
         DocumentDetailResponse response = DocumentDetailResponseMapper.toResponse(document);
-        return ResponseEntity.ok(ApiResponse.of(response));
+        return ResponseEntity.ok(ApiResponse.of("문서가 수정되었습니다.", response));
     }
 
     @DeleteMapping("/{id}")
@@ -113,11 +113,11 @@ public class DocumentController {
             description = "작성자 본인의 문서를 삭제합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    public ResponseEntity<Void> deleteDocument(
+    public ResponseEntity<ApiResponse<Void>> deleteDocument(
             @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal userPrincipal
     ) {
         documentService.deleteDocument(id, userPrincipal.getId());
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success("문서가 삭제되었습니다."));
     }
 }

@@ -36,7 +36,7 @@ public class AuthController {
             @Valid @RequestBody EmailVerificationSendRequest request
     ) {
         EmailVerificationSendResponse response = authService.sendVerificationCode(request);
-        return ResponseEntity.ok(ApiResponse.of(response));
+        return ResponseEntity.ok(ApiResponse.of("이메일 인증코드를 발송했습니다.", response));
     }
 
     @PostMapping("/email/verify")
@@ -45,20 +45,20 @@ public class AuthController {
             @Valid @RequestBody EmailVerificationVerifyRequest request
     ) {
         EmailVerificationVerifyResponse response = authService.verifyCode(request);
-        return ResponseEntity.ok(ApiResponse.of(response));
+        return ResponseEntity.ok(ApiResponse.of("이메일 인증이 완료되었습니다.", response));
     }
 
     @PostMapping("/signup")
     @Operation(summary = "회원가입", description = "이메일 인증이 완료된 계정으로 회원가입을 진행합니다.")
     public ResponseEntity<ApiResponse<SignupResponse>> signup(@Valid @RequestBody SignupRequest request) {
         SignupResponse response = authService.signup(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(response));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of("회원가입이 완료되었습니다.", response));
     }
 
     @PostMapping("/login")
     @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인하고 JWT access token을 발급합니다.")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
-        return ResponseEntity.ok(ApiResponse.of(response));
+        return ResponseEntity.ok(ApiResponse.of("로그인에 성공했습니다.", response));
     }
 }
