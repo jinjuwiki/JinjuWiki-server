@@ -1,4 +1,4 @@
-package com.jinju.jinjuwiki.domain.category.config;
+package com.jinju.jinjuwiki.global.config;
 
 import com.jinju.jinjuwiki.domain.category.entity.Category;
 import com.jinju.jinjuwiki.domain.category.repository.CategoryRepository;
