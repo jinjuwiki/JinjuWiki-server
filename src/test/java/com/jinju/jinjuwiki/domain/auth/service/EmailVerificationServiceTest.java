@@ -1,7 +1,7 @@
 package com.jinju.jinjuwiki.domain.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
@@ -42,20 +42,27 @@ class EmailVerificationServiceTest {
     @Test
     @DisplayName("이메일 인증이 완료되지 않으면 회원가입할 수 없다.")
     void signupFailWhenEmailNotVerified() {
-        assertThatThrownBy(() -> authService.signup(new SignupRequest("unverified@test.com", "password123", "user3")))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.EMAIL_NOT_VERIFIED);
+        // given
+        SignupRequest request = new SignupRequest("unverified@test.com", "password123", "user3");
+
+        // when
+        BusinessException exception = assertThrows(BusinessException.class, () -> authService.signup(request));
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMAIL_NOT_VERIFIED);
     }
 
     @Test
     @DisplayName("인증코드 검증에 성공하면 인증 완료 상태가 된다.")
     void verifyCodeSuccess() {
+        // given
         authService.sendVerificationCode(new EmailVerificationSendRequest("verify@test.com"));
         String code = emailVerificationRepository.findByEmail("verify@test.com").orElseThrow().getCode();
 
+        // when
         var response = authService.verifyCode(new EmailVerificationVerifyRequest("verify@test.com", code));
 
+        // then
         assertThat(response.verified()).isTrue();
         assertThat(response.email()).isEqualTo("verify@test.com");
     }
