@@ -3,7 +3,7 @@ package com.jinju.jinjuwiki.domain.document.service;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.SignupRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.SignupResponse;
@@ -91,16 +91,13 @@ class DocumentServiceTest {
         Category category = getCategory(SCHOOL);
 
         // when
-        Throwable thrown = catchThrowable(() -> documentService.createDocument(
+        BusinessException exception = assertThrows(BusinessException.class, () -> documentService.createDocument(
                 new DocumentCreateRequest("문서 제목", "문서 본문", category.getId()),
                 999L
         ));
 
         // then
-        assertThat(thrown)
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.USER_NOT_FOUND);
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
     }
 
     @Test
@@ -183,17 +180,14 @@ class DocumentServiceTest {
         );
 
         // when
-        Throwable thrown = catchThrowable(() -> documentService.updateDocument(
+        BusinessException exception = assertThrows(BusinessException.class, () -> documentService.updateDocument(
                 created.getId(),
                 new DocumentUpdateRequest("수정 제목", "수정 본문", category.getId()),
                 otherUser.userId()
         ));
 
         // then
-        assertThat(thrown)
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.FORBIDDEN_DOCUMENT_ACCESS);
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN_DOCUMENT_ACCESS);
     }
 
     @Test
@@ -230,13 +224,13 @@ class DocumentServiceTest {
         );
 
         // when
-        Throwable thrown = catchThrowable(() -> documentService.deleteDocument(created.getId(), otherUser.userId()));
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> documentService.deleteDocument(created.getId(), otherUser.userId())
+        );
 
         // then
-        assertThat(thrown)
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.FORBIDDEN_DOCUMENT_ACCESS);
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN_DOCUMENT_ACCESS);
     }
 
     @Test
@@ -299,13 +293,13 @@ class DocumentServiceTest {
         String keyword = "   ";
 
         // when
-        Throwable thrown = catchThrowable(() -> documentService.searchDocuments(keyword, null, 0, 10));
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> documentService.searchDocuments(keyword, null, 0, 10)
+        );
 
         // then
-        assertThat(thrown)
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_INPUT);
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT);
     }
 
     private void verifyEmail(String email) {

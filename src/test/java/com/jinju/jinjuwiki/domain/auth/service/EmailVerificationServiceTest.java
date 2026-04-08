@@ -1,7 +1,7 @@
 package com.jinju.jinjuwiki.domain.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
@@ -46,13 +46,10 @@ class EmailVerificationServiceTest {
         SignupRequest request = new SignupRequest("unverified@test.com", "password123", "user3");
 
         // when
-        Throwable thrown = catchThrowable(() -> authService.signup(request));
+        BusinessException exception = assertThrows(BusinessException.class, () -> authService.signup(request));
 
         // then
-        assertThat(thrown)
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.EMAIL_NOT_VERIFIED);
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMAIL_NOT_VERIFIED);
     }
 
     @Test

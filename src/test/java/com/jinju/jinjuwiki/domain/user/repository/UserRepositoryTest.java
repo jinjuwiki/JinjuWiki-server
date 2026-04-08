@@ -1,7 +1,7 @@
 package com.jinju.jinjuwiki.domain.user.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.entity.UserRole;
@@ -31,14 +31,17 @@ class UserRepositoryTest {
                 .build());
 
         // when
-        Throwable thrown = catchThrowable(() -> userRepository.saveAndFlush(User.builder()
+        DataIntegrityViolationException exception = assertThrows(
+                DataIntegrityViolationException.class,
+                () -> userRepository.saveAndFlush(User.builder()
                 .email("dbdup@test.com")
                 .password("encoded-password")
                 .nickname("dbUser2")
                 .role(UserRole.USER)
-                .build()));
+                .build())
+        );
 
         // then
-        assertThat(thrown).isInstanceOf(DataIntegrityViolationException.class);
+        assertThat(exception).isInstanceOf(DataIntegrityViolationException.class);
     }
 }

@@ -1,7 +1,7 @@
 package com.jinju.jinjuwiki.domain.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
@@ -66,15 +66,13 @@ class AuthServiceTest {
         authService.signup(new SignupRequest("dup@test.com", "password123", "user1"));
 
         // when
-        Throwable thrown = catchThrowable(
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> authService.signup(new SignupRequest("dup@test.com", "password123", "user2"))
         );
 
         // then
-        assertThat(thrown)
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.DUPLICATE_EMAIL);
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.DUPLICATE_EMAIL);
     }
 
     @Test
@@ -103,15 +101,13 @@ class AuthServiceTest {
         authService.signup(new SignupRequest("wrong@test.com", "password123", "wrongUser"));
 
         // when
-        Throwable thrown = catchThrowable(
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> authService.login(new LoginRequest("wrong@test.com", "bad-password"))
         );
 
         // then
-        assertThat(thrown)
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_LOGIN);
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_LOGIN);
     }
 
     private void verifyEmail(String email) {
