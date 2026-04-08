@@ -1,6 +1,5 @@
 package com.jinju.jinjuwiki.domain.auth.service;
 
-import com.jinju.jinjuwiki.domain.auth.dto.request.SignupRequest;
 import com.jinju.jinjuwiki.domain.auth.entity.EmailVerification;
 import com.jinju.jinjuwiki.domain.auth.repository.EmailVerificationRepository;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
@@ -19,10 +18,10 @@ public class AuthValidationService {
     private final EmailVerificationRepository emailVerificationRepository;
 
     // 회원가입 중복 검증 호출
-    public void validateDuplicateSignup(SignupRequest request) {
-        validateEmailAvailable(request.email());
+    public void validateDuplicateSignup(String email, String nickname) {
+        validateEmailAvailable(email);
 
-        if (userRepository.existsByNickname(request.nickname())) {
+        if (userRepository.existsByNickname(nickname)) {
             throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
         }
     }

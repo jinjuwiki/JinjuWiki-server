@@ -90,7 +90,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public SignupResponse signup(SignupRequest request) {
-        authValidationService.validateDuplicateSignup(request);
+        authValidationService.validateDuplicateSignup(request.email(), request.nickname());
         authValidationService.validateEmailVerified(request.email());
 
         User user = User.builder()
