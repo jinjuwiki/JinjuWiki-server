@@ -6,6 +6,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -23,6 +24,16 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    // 공개 API 경로 상수
+    private static final String AUTH_EMAIL_SEND_PATH = "/api/auth/email/send";
+    private static final String AUTH_EMAIL_VERIFY_PATH = "/api/auth/email/verify";
+    private static final String AUTH_SIGNUP_PATH = "/api/auth/signup";
+    private static final String AUTH_LOGIN_PATH = "/api/auth/login";
+    private static final String CATEGORY_LIST_PATH = "/api/categories";
+    private static final String DOCUMENT_LIST_PATH = "/api/documents";
+    private static final String DOCUMENT_DETAIL_PATH = "/api/documents/*";
+    private static final String DOCUMENT_SEARCH_PATH = "/api/documents/search";
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
@@ -34,14 +45,15 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, AUTH_EMAIL_SEND_PATH, AUTH_EMAIL_VERIFY_PATH).permitAll()
+                        .requestMatchers(HttpMethod.POST, AUTH_SIGNUP_PATH, AUTH_LOGIN_PATH).permitAll()
+                        .requestMatchers(HttpMethod.GET, CATEGORY_LIST_PATH).permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/documents/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/documents").authenticated()
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/documents/**").authenticated()
-                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/documents/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, DOCUMENT_LIST_PATH, DOCUMENT_SEARCH_PATH, DOCUMENT_DETAIL_PATH).permitAll()
+                        .requestMatchers(HttpMethod.POST, DOCUMENT_LIST_PATH).authenticated()
+                        .requestMatchers(HttpMethod.PUT, DOCUMENT_DETAIL_PATH).authenticated()
+                        .requestMatchers(HttpMethod.DELETE, DOCUMENT_DETAIL_PATH).authenticated()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception
