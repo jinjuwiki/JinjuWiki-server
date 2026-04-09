@@ -2,6 +2,7 @@ package com.jinju.jinjuwiki.domain.document.mapper;
 
 import com.jinju.jinjuwiki.domain.document.dto.response.DocumentDetailResponse;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
+import com.jinju.jinjuwiki.domain.document.support.DocumentContentJsonCodec;
 
 public class DocumentDetailResponseMapper {
     private DocumentDetailResponseMapper() {
@@ -12,11 +13,13 @@ public class DocumentDetailResponseMapper {
         return new DocumentDetailResponse(
                 document.getId(),
                 document.getTitle(),
-                document.getContent(),
+                document.getSummary(),
                 document.getCategory().getId(),
                 document.getCategory().getName(),
+                document.getEventYear(),
                 document.getAuthor().getId(),
                 document.getAuthor().getNickname(),
+                DocumentContentJsonCodec.readTree(document.getContentJson() == null ? document.getContent() : document.getContentJson()),
                 document.getViewCount(),
                 document.getCreatedAt(),
                 document.getUpdatedAt()

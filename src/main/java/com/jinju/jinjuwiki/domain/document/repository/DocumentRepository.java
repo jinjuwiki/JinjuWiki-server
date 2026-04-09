@@ -20,7 +20,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             select d
             from Document d
             where lower(d.title) like lower(concat('%', :keyword, '%'))
-              or lower(d.content) like lower(concat('%', :keyword, '%'))
+              or lower(d.summary) like lower(concat('%', :keyword, '%'))
             order by d.createdAt desc
             """)
     Page<Document> searchByKeyword(
@@ -34,7 +34,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             where d.category.id = :categoryId
               and (
                   lower(d.title) like lower(concat('%', :keyword, '%'))
-                or lower(d.content) like lower(concat('%', :keyword, '%'))
+                or lower(d.summary) like lower(concat('%', :keyword, '%'))
               )
             order by d.createdAt desc
             """)

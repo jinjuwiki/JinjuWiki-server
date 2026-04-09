@@ -12,8 +12,10 @@ public class DocumentSummaryResponseMapper {
         return new DocumentSummaryResponse(
                 document.getId(),
                 document.getTitle(),
+                document.getSummary(),
                 document.getCategory().getId(),
                 document.getCategory().getName(),
+                document.getEventYear(),
                 document.getAuthor().getNickname(),
                 document.getViewCount(),
                 document.getCreatedAt()

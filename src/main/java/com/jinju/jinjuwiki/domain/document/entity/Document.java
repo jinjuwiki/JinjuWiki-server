@@ -32,8 +32,17 @@ public class Document extends BaseEntity {
     @Column(nullable = false, length = 150)
     private String title;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String content;
+
+    @Column(length = 255)
+    private String summary;
+
+    @Column
+    private Integer eventYear;
+
+    @Column(columnDefinition = "TEXT")
+    private String contentJson;
 
     @Builder.Default
     @Column(nullable = false)
@@ -54,9 +63,12 @@ public class Document extends BaseEntity {
         this.viewCount++;
     }
 
-    public void update(String title, String content, Category category) {
+    public void update(String title, String content, String summary, Integer eventYear, String contentJson, Category category) {
         this.title = title;
         this.content = content;
+        this.summary = summary;
+        this.eventYear = eventYear;
+        this.contentJson = contentJson;
         this.category = category;
     }
 
