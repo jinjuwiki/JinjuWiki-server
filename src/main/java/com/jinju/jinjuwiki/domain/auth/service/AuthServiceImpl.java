@@ -10,7 +10,9 @@ import com.jinju.jinjuwiki.domain.auth.dto.response.EmailVerificationVerifyRespo
 import com.jinju.jinjuwiki.domain.auth.dto.request.SignupRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.SignupResponse;
 import com.jinju.jinjuwiki.domain.auth.entity.EmailVerification;
+import com.jinju.jinjuwiki.domain.auth.entity.PasswordResetToken;
 import com.jinju.jinjuwiki.domain.auth.repository.EmailVerificationRepository;
+import com.jinju.jinjuwiki.domain.auth.repository.PasswordResetTokenRepository;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.entity.UserRole;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
@@ -37,6 +39,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final EmailVerificationRepository emailVerificationRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final AuthValidationService authValidationService;
     private final EmailSender emailSender;
     private final PasswordEncoder passwordEncoder;
@@ -44,6 +47,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Value("${app.auth.email-verification-expiration-minutes}")
     private long emailVerificationExpirationMinutes;
+
+    @Value("${app.auth.password-reset-expiration-minutes:30}")
+    private long passwordResetExpirationMinutes;
 
     @Override
     @Transactional
@@ -130,11 +136,31 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public void requestPasswordReset(PasswordResetRequest request) {
-        throw new UnsupportedOperationException("비밀번호 재설정 요청 구현 예정");
+        userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        String token = generatePasswordResetToken();
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(passwordResetExpirationMinutes);
+
+        Optional<PasswordResetToken> existing = passwordResetTokenRepository.findByEmail(request.email());
+        if (existing.isPresent()) {
+            existing.get().reissue(token, expiresAt);
+        } else {
+            passwordResetTokenRepository.save(PasswordResetToken.builder()
+                    .email(request.email())
+                    .token(token)
+                    .expiresAt(expiresAt)
+                    .build());
+        }
     }
 
     private String generateVerificationCode() {
         return String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
+    }
+
+    private String generatePasswordResetToken() {
+        return java.util.UUID.randomUUID().toString();
     }
 }
