@@ -38,11 +38,10 @@ public class AuthValidationService {
         EmailVerification verification = emailVerificationRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED));
 
-        if (verification.isExpired(LocalDateTime.now())) {
-            throw new BusinessException(ErrorCode.EMAIL_VERIFICATION_EXPIRED);
-        }
-
         if (!verification.isVerified()) {
+            if (verification.isExpired(LocalDateTime.now())) {
+                throw new BusinessException(ErrorCode.EMAIL_VERIFICATION_EXPIRED);
+            }
             throw new BusinessException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
     }
