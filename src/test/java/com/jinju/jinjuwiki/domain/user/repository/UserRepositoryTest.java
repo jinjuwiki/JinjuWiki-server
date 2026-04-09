@@ -16,8 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 class UserRepositoryTest {
 
+    private final UserRepository userRepository;
+
     @Autowired
-    private UserRepository userRepository;
+    UserRepositoryTest(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @Test
     @DisplayName("DB unique 제약으로 이메일이 중복되면 데이터 무결성 예외가 발생한다.")

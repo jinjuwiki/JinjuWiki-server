@@ -29,14 +29,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class UserControllerTest {
 
-    @Autowired
-    private AuthService authService;
-
-    @Autowired
-    private EmailVerificationRepository emailVerificationRepository;
+    private final AuthService authService;
+    private final EmailVerificationRepository emailVerificationRepository;
 
     @LocalServerPort
     private int port;
+
+    @Autowired
+    UserControllerTest(AuthService authService, EmailVerificationRepository emailVerificationRepository) {
+        this.authService = authService;
+        this.emailVerificationRepository = emailVerificationRepository;
+    }
 
     @TestConfiguration
     static class TestMailConfig {

@@ -22,11 +22,14 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 class EmailVerificationServiceTest {
 
-    @Autowired
-    private AuthService authService;
+    private final AuthService authService;
+    private final EmailVerificationRepository emailVerificationRepository;
 
     @Autowired
-    private EmailVerificationRepository emailVerificationRepository;
+    EmailVerificationServiceTest(AuthService authService, EmailVerificationRepository emailVerificationRepository) {
+        this.authService = authService;
+        this.emailVerificationRepository = emailVerificationRepository;
+    }
 
     @TestConfiguration
     static class TestMailConfig {

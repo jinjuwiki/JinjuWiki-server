@@ -38,20 +38,26 @@ class DocumentServiceTest {
     private static final String TEACHER = "선생님";
     private static final String ETC = "기타";
 
-    @Autowired
-    private DocumentService documentService;
+    private final DocumentService documentService;
+    private final AuthService authService;
+    private final CategoryRepository categoryRepository;
+    private final DocumentRepository documentRepository;
+    private final EmailVerificationRepository emailVerificationRepository;
 
     @Autowired
-    private AuthService authService;
-
-    @Autowired
-    private CategoryRepository categoryRepository;
-
-    @Autowired
-    private DocumentRepository documentRepository;
-
-    @Autowired
-    private EmailVerificationRepository emailVerificationRepository;
+    DocumentServiceTest(
+            DocumentService documentService,
+            AuthService authService,
+            CategoryRepository categoryRepository,
+            DocumentRepository documentRepository,
+            EmailVerificationRepository emailVerificationRepository
+    ) {
+        this.documentService = documentService;
+        this.authService = authService;
+        this.categoryRepository = categoryRepository;
+        this.documentRepository = documentRepository;
+        this.emailVerificationRepository = emailVerificationRepository;
+    }
 
     @TestConfiguration
     static class TestMailConfig {
