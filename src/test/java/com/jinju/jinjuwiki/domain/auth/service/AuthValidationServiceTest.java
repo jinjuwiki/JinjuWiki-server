@@ -1,7 +1,7 @@
 package com.jinju.jinjuwiki.domain.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
@@ -45,8 +45,14 @@ class AuthValidationServiceTest {
                 .build();
         when(emailVerificationRepository.findByEmail("verified@test.com")).thenReturn(Optional.of(verification));
 
-        // when & then
-        assertThatNoException().isThrownBy(() -> authValidationService.validateEmailVerified("verified@test.com"));
+        // when
+        String email = assertDoesNotThrow(() -> {
+            authValidationService.validateEmailVerified("verified@test.com");
+            return "verified@test.com";
+        });
+
+        // then
+        assertThat(email).isEqualTo("verified@test.com");
     }
 
     @Test

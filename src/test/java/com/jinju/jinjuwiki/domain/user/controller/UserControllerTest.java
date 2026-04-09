@@ -27,6 +27,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -64,9 +65,11 @@ class UserControllerTest {
         );
         when(userService.getProfile(1L)).thenReturn(response);
 
-        // when & then
-        mockMvc.perform(get("/api/users/me").header(HttpHeaders.AUTHORIZATION, "Bearer test-token"))
-                .andExpect(status().isOk())
+        // when
+        ResultActions result = mockMvc.perform(get("/api/users/me").header(HttpHeaders.AUTHORIZATION, "Bearer test-token"));
+
+        // then
+        result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.userId").value(1L))
                 .andExpect(jsonPath("$.data.email").value("profile@test.com"))
                 .andExpect(jsonPath("$.data.nickname").value("profileUser"))
@@ -80,9 +83,11 @@ class UserControllerTest {
     @Test
     @DisplayName("인증 없이 프로필을 조회하면 401을 반환한다.")
     void getMyProfileUnauthorized() throws Exception {
-        // when & then
-        mockMvc.perform(get("/api/users/me"))
-                .andExpect(status().isUnauthorized());
+        // when
+        ResultActions result = mockMvc.perform(get("/api/users/me"));
+
+        // then
+        result.andExpect(status().isUnauthorized());
     }
 
     // 테스트용 인증 필터 클래스
