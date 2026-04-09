@@ -1,5 +1,6 @@
 package com.jinju.jinjuwiki.domain.upload.controller;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -62,7 +63,7 @@ class UploadControllerTest {
                 "image-content".getBytes()
         );
         ImageUploadResponse response = new ImageUploadResponse("/uploads/images/sample.png");
-        when(uploadService.uploadImage(org.mockito.ArgumentMatchers.any())).thenReturn(response);
+        when(uploadService.uploadImage(any())).thenReturn(response);
 
         // when
         ResultActions result = mockMvc.perform(
@@ -76,7 +77,7 @@ class UploadControllerTest {
                 .andExpect(jsonPath("$.message").value("이미지가 업로드되었습니다."))
                 .andExpect(jsonPath("$.data.imageUrl").value("/uploads/images/sample.png"));
 
-        verify(uploadService).uploadImage(org.mockito.ArgumentMatchers.any());
+        verify(uploadService).uploadImage(any());
     }
 
     @Test

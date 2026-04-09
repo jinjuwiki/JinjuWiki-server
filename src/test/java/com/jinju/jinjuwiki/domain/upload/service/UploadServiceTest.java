@@ -60,7 +60,7 @@ class UploadServiceTest {
         );
 
         // then
-        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT);
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMPTY_UPLOAD_FILE);
     }
 
     @Test
@@ -82,7 +82,7 @@ class UploadServiceTest {
         );
 
         // then
-        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT);
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_UPLOAD_FILE_TYPE);
     }
 
     // 테스트용 업로드 서비스 생성 함수

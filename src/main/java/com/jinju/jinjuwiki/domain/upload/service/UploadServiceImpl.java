@@ -10,14 +10,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Set;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 // 이미지 저장 서비스
 @Service
-@RequiredArgsConstructor
 public class UploadServiceImpl implements UploadService {
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
@@ -47,7 +45,7 @@ public class UploadServiceImpl implements UploadService {
             Files.createDirectories(uploadRootPath);
             Files.copy(image.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException exception) {
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED);
         }
 
         return new ImageUploadResponse(imageUrlPrefix + storedFileName);
@@ -55,11 +53,11 @@ public class UploadServiceImpl implements UploadService {
 
     private void validateImage(MultipartFile image) {
         if (image == null || image.isEmpty()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
+            throw new BusinessException(ErrorCode.EMPTY_UPLOAD_FILE);
         }
 
         if (!ALLOWED_CONTENT_TYPES.contains(image.getContentType())) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
+            throw new BusinessException(ErrorCode.INVALID_UPLOAD_FILE_TYPE);
         }
     }
 
@@ -70,7 +68,7 @@ public class UploadServiceImpl implements UploadService {
 
     private String extractExtension(String originalFilename) {
         if (originalFilename == null || !originalFilename.contains(".")) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
+            throw new BusinessException(ErrorCode.INVALID_UPLOAD_FILE_TYPE);
         }
 
         return originalFilename.substring(originalFilename.lastIndexOf('.'));
