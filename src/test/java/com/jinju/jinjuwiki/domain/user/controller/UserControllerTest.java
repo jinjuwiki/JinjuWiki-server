@@ -100,10 +100,12 @@ class UserControllerTest {
     @Test
     @DisplayName("로그인한 사용자는 자신의 닉네임을 수정할 수 있다.")
     void updateMyNicknameSuccess() throws Exception {
+        // given
         UserNicknameUpdateRequest request = new UserNicknameUpdateRequest("updatedUser");
         UserNicknameUpdateResponse response = new UserNicknameUpdateResponse(1L, "updatedUser");
         when(userService.updateNickname(1L, request)).thenReturn(response);
 
+        // when
         ResultActions result = mockMvc.perform(
                 patch("/api/users/me/nickname")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer test-token")
@@ -111,6 +113,7 @@ class UserControllerTest {
                         .content(OBJECT_MAPPER.writeValueAsString(request))
         );
 
+        // then
         result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("닉네임이 변경되었습니다."))
                 .andExpect(jsonPath("$.data.userId").value(1L))
@@ -122,8 +125,10 @@ class UserControllerTest {
     @Test
     @DisplayName("로그인한 사용자는 자신의 비밀번호를 수정할 수 있다.")
     void updateMyPasswordSuccess() throws Exception {
+        // given
         UserPasswordUpdateRequest request = new UserPasswordUpdateRequest("old-password", "new-password1");
 
+        // when
         ResultActions result = mockMvc.perform(
                 patch("/api/users/me/password")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer test-token")
@@ -131,6 +136,7 @@ class UserControllerTest {
                         .content(OBJECT_MAPPER.writeValueAsString(request))
         );
 
+        // then
         result.andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("비밀번호가 변경되었습니다."))
                 .andExpect(jsonPath("$.data").isEmpty());
