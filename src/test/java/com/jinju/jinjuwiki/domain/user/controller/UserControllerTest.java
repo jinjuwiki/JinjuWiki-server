@@ -62,7 +62,6 @@ class UserControllerTest {
                 LocalDateTime.of(2026, 4, 9, 13, 0),
                 LocalDateTime.of(2026, 4, 9, 13, 5)
         );
-        // stubbing
         when(userService.getProfile(1L)).thenReturn(response);
 
         // when & then

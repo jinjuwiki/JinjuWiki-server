@@ -80,7 +80,6 @@ class EmailVerificationServiceTest {
                 .verified(false)
                 .expiresAt(expiresAt)
                 .build();
-        // stubbing
         when(emailVerificationRepository.findByEmail("verify@test.com")).thenReturn(Optional.of(verification));
 
         // when
@@ -91,7 +90,6 @@ class EmailVerificationServiceTest {
         assertThat(response.email()).isEqualTo("verify@test.com");
         assertThat(response.verifiedAt()).isNotNull();
         assertThat(verification.isVerified()).isTrue();
-        // stubbing
         verify(emailVerificationRepository).findByEmail("verify@test.com");
     }
 }
