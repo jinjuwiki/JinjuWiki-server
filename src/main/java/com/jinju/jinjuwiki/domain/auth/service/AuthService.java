@@ -1,5 +1,6 @@
 package com.jinju.jinjuwiki.domain.auth.service;
 
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.LoginRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.LoginResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
@@ -18,4 +19,6 @@ public interface AuthService {
     SignupResponse signup(SignupRequest request);
 
     LoginResponse login(LoginRequest request);
+
+    void requestPasswordReset(PasswordResetRequest request);
 }

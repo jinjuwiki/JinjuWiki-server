@@ -1,5 +1,6 @@
 package com.jinju.jinjuwiki.domain.auth.service;
 
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.LoginRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.LoginResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
@@ -126,6 +127,11 @@ public class AuthServiceImpl implements AuthService {
                 user.getNickname(),
                 user.getRole().name()
         );
+    }
+
+    @Override
+    public void requestPasswordReset(PasswordResetRequest request) {
+        throw new UnsupportedOperationException("비밀번호 재설정 요청 구현 예정");
     }
 
     private String generateVerificationCode() {
