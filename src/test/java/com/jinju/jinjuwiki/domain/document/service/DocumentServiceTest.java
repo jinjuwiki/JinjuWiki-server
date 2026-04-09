@@ -9,12 +9,15 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jinju.jinjuwiki.domain.category.entity.Category;
 import com.jinju.jinjuwiki.domain.category.repository.CategoryRepository;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentCreateRequest;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
+import com.jinju.jinjuwiki.domain.document.support.DocumentContentJsonCodec;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.entity.UserRole;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
@@ -37,6 +40,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 class DocumentServiceTest {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     @Mock
     private DocumentRepository documentRepository;
 
@@ -53,15 +58,24 @@ class DocumentServiceTest {
     private DocumentServiceImpl documentService;
 
     @Test
-    @DisplayName("문서를 생성하면 작성자와 카테고리 정보가 함께 반환된다.")
+    @DisplayName("문서를 생성하면 새 스펙 필드가 함께 저장된다.")
     void createDocumentSuccess() {
-        // given
         User author = createUser(1L, "doc1@test.com", "docUser");
         Category category = createCategory(10L, "학교");
-        DocumentCreateRequest request = new DocumentCreateRequest("문서 제목", "문서 본문", 10L);
+        JsonNode contentJson = createContentJson();
+        DocumentCreateRequest request = new DocumentCreateRequest(
+                "문서 제목",
+                "문서 요약",
+                10L,
+                2024,
+                contentJson
+        );
         Document savedDocument = Document.builder()
                 .title("문서 제목")
-                .content("문서 본문")
+                .content(DocumentContentJsonCodec.writeValue(contentJson))
+                .summary("문서 요약")
+                .eventYear(2024)
+                .contentJson(DocumentContentJsonCodec.writeValue(contentJson))
                 .author(author)
                 .category(category)
                 .build();
@@ -70,13 +84,13 @@ class DocumentServiceTest {
         when(categoryRepository.findById(10L)).thenReturn(Optional.of(category));
         when(documentRepository.save(any(Document.class))).thenReturn(savedDocument);
 
-        // when
         Document response = documentService.createDocument(request, 1L);
 
-        // then
         assertThat(response.getId()).isEqualTo(100L);
+        assertThat(response.getSummary()).isEqualTo("문서 요약");
+        assertThat(response.getEventYear()).isEqualTo(2024);
+        assertThat(DocumentContentJsonCodec.readTree(response.getContentJson())).isEqualTo(contentJson);
         assertThat(response.getAuthor().getNickname()).isEqualTo("docUser");
-        assertThat(response.getCategory().getName()).isEqualTo("학교");
         verify(userRepository).findById(1L);
         verify(categoryRepository).findById(10L);
         verify(documentRepository).save(any(Document.class));
@@ -85,17 +99,20 @@ class DocumentServiceTest {
     @Test
     @DisplayName("존재하지 않는 작성자 ID로 문서를 생성하면 예외가 발생한다.")
     void createDocumentFailWhenUserNotFound() {
-        // given
-        DocumentCreateRequest request = new DocumentCreateRequest("문서 제목", "문서 본문", 10L);
+        DocumentCreateRequest request = new DocumentCreateRequest(
+                "문서 제목",
+                "문서 요약",
+                10L,
+                2024,
+                createContentJson()
+        );
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
-        // when
         BusinessException exception = assertThrows(
                 BusinessException.class,
                 () -> documentService.createDocument(request, 999L)
         );
 
-        // then
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
         verify(userRepository).findById(999L);
     }
@@ -103,10 +120,12 @@ class DocumentServiceTest {
     @Test
     @DisplayName("문서를 조회하면 조회수가 증가한다.")
     void getDocumentSuccess() {
-        // given
         Document document = Document.builder()
                 .title("수학 공부법")
-                .content("개념부터 반복")
+                .content(DocumentContentJsonCodec.writeValue(createContentJson()))
+                .summary("시험 대비 요약")
+                .eventYear(2024)
+                .contentJson(DocumentContentJsonCodec.writeValue(createContentJson()))
                 .author(createUser(2L, "doc2@test.com", "docUser2"))
                 .category(createCategory(20L, "학생"))
                 .build();
@@ -114,10 +133,8 @@ class DocumentServiceTest {
 
         when(documentDomainService.getDocument(200L)).thenReturn(document);
 
-        // when
         Document response = documentService.getDocument(200L);
 
-        // then
         assertThat(response.getId()).isEqualTo(200L);
         assertThat(response.getViewCount()).isEqualTo(1L);
         verify(documentDomainService).getDocument(200L);
@@ -126,18 +143,19 @@ class DocumentServiceTest {
     @Test
     @DisplayName("문서 목록은 최신순으로 페이지 조회할 수 있다.")
     void getDocumentsSuccess() {
-        // given
         Document older = createDocument(
                 301L,
                 "첫 번째 글",
-                "내용 1",
+                "요약 1",
+                2023,
                 createUser(3L, "doc3@test.com", "docUser3"),
                 createCategory(30L, "사건사고")
         );
         Document newer = createDocument(
                 302L,
                 "두 번째 글",
-                "내용 2",
+                "요약 2",
+                2024,
                 createUser(3L, "doc3@test.com", "docUser3"),
                 createCategory(30L, "사건사고")
         );
@@ -146,10 +164,8 @@ class DocumentServiceTest {
         when(documentRepository.findByCategoryIdOrderByCreatedAtDesc(eq(30L), any(Pageable.class)))
                 .thenReturn(pageResponse);
 
-        // when
         Page<Document> response = documentService.getDocuments(30L, 0, 10);
 
-        // then
         assertThat(response.getContent()).hasSize(2);
         assertThat(response.getContent().get(0).getTitle()).isEqualTo("두 번째 글");
         verify(documentRepository).findByCategoryIdOrderByCreatedAtDesc(eq(30L), any(Pageable.class));
@@ -158,25 +174,25 @@ class DocumentServiceTest {
     @Test
     @DisplayName("작성자는 자신의 문서를 수정할 수 있다.")
     void updateDocumentSuccess() {
-        // given
         User author = createUser(4L, "doc4@test.com", "docUser4");
         Category category = createCategory(40L, "학교");
         Category updatedCategory = createCategory(41L, "선생님");
-        Document document = createDocument(400L, "원래 제목", "원래 본문", author, category);
+        Document document = createDocument(400L, "원래 제목", "원래 요약", 2023, author, category);
+        JsonNode updatedContentJson = createContentJson();
         when(documentDomainService.getDocument(400L)).thenReturn(document);
         doNothing().when(documentDomainService).validateAuthor(document, 4L);
         when(categoryRepository.findById(41L)).thenReturn(Optional.of(updatedCategory));
 
-        // when
         Document response = documentService.updateDocument(
                 400L,
-                new DocumentUpdateRequest("수정 제목", "수정 본문", 41L),
+                new DocumentUpdateRequest("수정 제목", "수정 요약", 41L, 2024, updatedContentJson),
                 4L
         );
 
-        // then
         assertThat(response.getTitle()).isEqualTo("수정 제목");
-        assertThat(response.getContent()).isEqualTo("수정 본문");
+        assertThat(response.getSummary()).isEqualTo("수정 요약");
+        assertThat(response.getEventYear()).isEqualTo(2024);
+        assertThat(DocumentContentJsonCodec.readTree(response.getContentJson())).isEqualTo(updatedContentJson);
         assertThat(response.getCategory().getName()).isEqualTo("선생님");
         verify(documentDomainService).getDocument(400L);
         verify(documentDomainService).validateAuthor(document, 4L);
@@ -186,11 +202,11 @@ class DocumentServiceTest {
     @Test
     @DisplayName("작성자가 아니면 문서를 수정할 수 없다.")
     void updateDocumentFailWhenNotAuthor() {
-        // given
         Document document = createDocument(
                 500L,
                 "제목",
-                "본문",
+                "요약",
+                2024,
                 createUser(5L, "doc5@test.com", "author5"),
                 createCategory(50L, "학교")
         );
@@ -199,17 +215,15 @@ class DocumentServiceTest {
                 .when(documentDomainService)
                 .validateAuthor(document, 6L);
 
-        // when
         BusinessException exception = assertThrows(
                 BusinessException.class,
                 () -> documentService.updateDocument(
                         500L,
-                        new DocumentUpdateRequest("수정 제목", "수정 본문", 50L),
+                        new DocumentUpdateRequest("수정 제목", "수정 요약", 50L, 2024, createContentJson()),
                         6L
                 )
         );
 
-        // then
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN_DOCUMENT_ACCESS);
         verify(documentDomainService).getDocument(500L);
         verify(documentDomainService).validateAuthor(document, 6L);
@@ -218,21 +232,19 @@ class DocumentServiceTest {
     @Test
     @DisplayName("작성자는 자신의 문서를 삭제할 수 있다.")
     void deleteDocumentSuccess() {
-        // given
         Document document = createDocument(
                 700L,
                 "삭제 제목",
-                "삭제 본문",
+                "삭제 요약",
+                2024,
                 createUser(7L, "doc7@test.com", "docUser7"),
                 createCategory(70L, "기타")
         );
         when(documentDomainService.getDocument(700L)).thenReturn(document);
         doNothing().when(documentDomainService).validateAuthor(document, 7L);
 
-        // when
         documentService.deleteDocument(700L, 7L);
 
-        // then
         verify(documentDomainService).getDocument(700L);
         verify(documentDomainService).validateAuthor(document, 7L);
         verify(documentRepository).delete(document);
@@ -241,11 +253,11 @@ class DocumentServiceTest {
     @Test
     @DisplayName("작성자가 아니면 문서를 삭제할 수 없다.")
     void deleteDocumentFailWhenNotAuthor() {
-        // given
         Document document = createDocument(
                 800L,
                 "삭제 전 제목",
-                "삭제 전 본문",
+                "삭제 전 요약",
+                2024,
                 createUser(8L, "doc8@test.com", "author8"),
                 createCategory(80L, "학교")
         );
@@ -254,36 +266,32 @@ class DocumentServiceTest {
                 .when(documentDomainService)
                 .validateAuthor(document, 9L);
 
-        // when
         BusinessException exception = assertThrows(
                 BusinessException.class,
                 () -> documentService.deleteDocument(800L, 9L)
         );
 
-        // then
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN_DOCUMENT_ACCESS);
         verify(documentDomainService).getDocument(800L);
         verify(documentDomainService).validateAuthor(document, 9L);
     }
 
     @Test
-    @DisplayName("키워드로 제목과 본문을 검색할 수 있다.")
+    @DisplayName("키워드로 제목과 요약을 검색할 수 있다.")
     void searchDocumentsSuccess() {
-        // given
         Document document = createDocument(
                 1000L,
                 "수학 공부법",
                 "시험 대비 공부 루틴",
+                2024,
                 createUser(10L, "doc10@test.com", "docUser10"),
                 createCategory(100L, "학생")
         );
         Page<Document> searchResult = new PageImpl<>(List.of(document));
         when(documentRepository.searchByKeyword(eq("공부"), any(Pageable.class))).thenReturn(searchResult);
 
-        // when
         Page<Document> response = documentService.searchDocuments("공부", null, 0, 10);
 
-        // then
         assertThat(response.getContent()).hasSize(1);
         assertThat(response.getContent().get(0).getTitle()).isEqualTo("수학 공부법");
         verify(documentRepository).searchByKeyword(eq("공부"), any(Pageable.class));
@@ -292,11 +300,11 @@ class DocumentServiceTest {
     @Test
     @DisplayName("검색은 카테고리 필터와 함께 사용할 수 있다.")
     void searchDocumentsWithCategory() {
-        // given
         Document document = createDocument(
                 1100L,
                 "수학 시험 대비",
                 "공부 계획",
+                2024,
                 createUser(11L, "doc11@test.com", "docUser11"),
                 createCategory(110L, "학생")
         );
@@ -304,10 +312,8 @@ class DocumentServiceTest {
         when(documentRepository.searchByCategoryAndKeyword(eq(110L), eq("시험"), any(Pageable.class)))
                 .thenReturn(searchResult);
 
-        // when
         Page<Document> response = documentService.searchDocuments("시험", 110L, 0, 10);
 
-        // then
         assertThat(response.getContent()).hasSize(1);
         assertThat(response.getContent().get(0).getCategory().getName()).isEqualTo("학생");
         verify(documentRepository).searchByCategoryAndKeyword(eq(110L), eq("시험"), any(Pageable.class));
@@ -316,17 +322,21 @@ class DocumentServiceTest {
     @Test
     @DisplayName("빈 검색어로 검색하면 예외가 발생한다.")
     void searchDocumentsFailWhenKeywordIsBlank() {
-        // given
         String keyword = "   ";
 
-        // when
         BusinessException exception = assertThrows(
                 BusinessException.class,
                 () -> documentService.searchDocuments(keyword, null, 0, 10)
         );
 
-        // then
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT);
+    }
+
+    private JsonNode createContentJson() {
+        var documentNode = OBJECT_MAPPER.createObjectNode();
+        documentNode.put("type", "doc");
+        documentNode.putArray("content");
+        return documentNode;
     }
 
     // 테스트용 사용자 생성 함수
@@ -351,10 +361,13 @@ class DocumentServiceTest {
     }
 
     // 테스트용 문서 생성 함수
-    private Document createDocument(Long id, String title, String content, User author, Category category) {
+    private Document createDocument(Long id, String title, String summary, Integer eventYear, User author, Category category) {
         Document document = Document.builder()
                 .title(title)
-                .content(content)
+                .content(DocumentContentJsonCodec.writeValue(createContentJson()))
+                .summary(summary)
+                .eventYear(eventYear)
+                .contentJson(DocumentContentJsonCodec.writeValue(createContentJson()))
                 .author(author)
                 .category(category)
                 .build();
