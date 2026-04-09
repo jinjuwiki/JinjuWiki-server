@@ -6,6 +6,7 @@ import com.jinju.jinjuwiki.domain.document.dto.request.DocumentCreateRequest;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
+import com.jinju.jinjuwiki.domain.document.support.DocumentContentJsonCodec;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import com.jinju.jinjuwiki.global.error.BusinessException;
@@ -36,7 +37,10 @@ public class DocumentServiceImpl implements DocumentService {
 
         Document document = Document.builder()
                 .title(request.title())
-                .content(request.content())
+                .content(DocumentContentJsonCodec.writeValue(request.contentJson()))
+                .summary(request.summary())
+                .eventYear(request.eventYear())
+                .contentJson(DocumentContentJsonCodec.writeValue(request.contentJson()))
                 .author(author)
                 .category(category)
                 .build();
@@ -84,7 +88,14 @@ public class DocumentServiceImpl implements DocumentService {
         Category category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
 
-        document.update(request.title(), request.content(), category);
+        document.update(
+                request.title(),
+                DocumentContentJsonCodec.writeValue(request.contentJson()),
+                request.summary(),
+                request.eventYear(),
+                DocumentContentJsonCodec.writeValue(request.contentJson()),
+                category
+        );
         return document;
     }
 

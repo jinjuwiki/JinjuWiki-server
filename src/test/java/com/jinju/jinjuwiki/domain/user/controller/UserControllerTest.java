@@ -2,10 +2,15 @@ package com.jinju.jinjuwiki.domain.user.controller;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jinju.jinjuwiki.domain.user.dto.request.UserNicknameUpdateRequest;
+import com.jinju.jinjuwiki.domain.user.dto.request.UserPasswordUpdateRequest;
+import com.jinju.jinjuwiki.domain.user.dto.response.UserNicknameUpdateResponse;
 import com.jinju.jinjuwiki.domain.user.dto.response.UserProfileResponse;
 import com.jinju.jinjuwiki.domain.user.service.UserService;
 import com.jinju.jinjuwiki.global.security.UserPrincipal;
@@ -34,6 +39,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 // 사용자 컨트롤러 MockMvc 단위 테스트 클래스
 @ExtendWith(MockitoExtension.class)
 class UserControllerTest {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Mock
     private UserService userService;
@@ -88,6 +95,53 @@ class UserControllerTest {
 
         // then
         result.andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("로그인한 사용자는 자신의 닉네임을 수정할 수 있다.")
+    void updateMyNicknameSuccess() throws Exception {
+        // given
+        UserNicknameUpdateRequest request = new UserNicknameUpdateRequest("updatedUser");
+        UserNicknameUpdateResponse response = new UserNicknameUpdateResponse(1L, "updatedUser");
+        when(userService.updateNickname(1L, request)).thenReturn(response);
+
+        // when
+        ResultActions result = mockMvc.perform(
+                patch("/api/users/me/nickname")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer test-token")
+                        .contentType("application/json")
+                        .content(OBJECT_MAPPER.writeValueAsString(request))
+        );
+
+        // then
+        result.andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("닉네임이 변경되었습니다."))
+                .andExpect(jsonPath("$.data.userId").value(1L))
+                .andExpect(jsonPath("$.data.nickname").value("updatedUser"));
+
+        verify(userService).updateNickname(1L, request);
+    }
+
+    @Test
+    @DisplayName("로그인한 사용자는 자신의 비밀번호를 수정할 수 있다.")
+    void updateMyPasswordSuccess() throws Exception {
+        // given
+        UserPasswordUpdateRequest request = new UserPasswordUpdateRequest("old-password", "new-password1");
+
+        // when
+        ResultActions result = mockMvc.perform(
+                patch("/api/users/me/password")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer test-token")
+                        .contentType("application/json")
+                        .content(OBJECT_MAPPER.writeValueAsString(request))
+        );
+
+        // then
+        result.andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("비밀번호가 변경되었습니다."))
+                .andExpect(jsonPath("$.data").isEmpty());
+
+        verify(userService).updatePassword(1L, request);
     }
 
     // 테스트용 인증 필터 클래스
