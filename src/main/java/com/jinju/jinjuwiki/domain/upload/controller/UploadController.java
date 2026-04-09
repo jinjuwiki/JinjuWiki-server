@@ -2,6 +2,7 @@ package com.jinju.jinjuwiki.domain.upload.controller;
 
 import com.jinju.jinjuwiki.domain.upload.dto.request.ImageUploadRequest;
 import com.jinju.jinjuwiki.domain.upload.dto.response.ImageUploadResponse;
+import com.jinju.jinjuwiki.domain.upload.service.UploadService;
 import com.jinju.jinjuwiki.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -22,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Upload", description = "이미지 업로드 API")
 public class UploadController {
 
+    private final UploadService uploadService;
+
     @PostMapping("/images")
     @Operation(
             summary = "문서 본문 이미지 업로드",
@@ -31,7 +34,8 @@ public class UploadController {
     public ResponseEntity<ApiResponse<ImageUploadResponse>> uploadImage(
             @Valid @ModelAttribute ImageUploadRequest request
     ) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-                .body(ApiResponse.of("이미지 업로드 구현 예정입니다.", new ImageUploadResponse(null)));
+        ImageUploadResponse response = uploadService.uploadImage(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.of("이미지가 업로드되었습니다.", response));
     }
 }
