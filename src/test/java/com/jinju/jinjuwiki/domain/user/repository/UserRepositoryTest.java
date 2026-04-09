@@ -5,15 +5,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.entity.UserRole;
+import com.jinju.jinjuwiki.global.config.JpaAuditingConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.annotation.Import;
 
-@Transactional
-@SpringBootTest
+// 유저 저장소 JPA 슬라이스 테스트 클래스
+@DataJpaTest
+@Import(JpaAuditingConfig.class)
 class UserRepositoryTest {
 
     private final UserRepository userRepository;
