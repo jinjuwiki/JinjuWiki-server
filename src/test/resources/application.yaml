@@ -19,3 +19,6 @@ jwt:
 app:
   auth:
     email-verification-expiration-minutes: 5
+  upload:
+    image-path: /tmp/jinjuwiki-test-uploads/images
+    image-url-prefix: /uploads/images/

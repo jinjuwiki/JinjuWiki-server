@@ -1,0 +1,76 @@
+package com.jinju.jinjuwiki.domain.upload.service;
+
+import com.jinju.jinjuwiki.domain.upload.dto.request.ImageUploadRequest;
+import com.jinju.jinjuwiki.domain.upload.dto.response.ImageUploadResponse;
+import com.jinju.jinjuwiki.global.error.BusinessException;
+import com.jinju.jinjuwiki.global.error.ErrorCode;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Set;
+import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+// 이미지 저장 서비스
+@Service
+public class UploadServiceImpl implements UploadService {
+
+    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "image/gif"
+    );
+
+    @Value("${app.upload.image-path}")
+    private String imageUploadPath;
+
+    @Value("${app.upload.image-url-prefix}")
+    private String imageUrlPrefix;
+
+    @Override
+    public ImageUploadResponse uploadImage(ImageUploadRequest request) {
+        MultipartFile image = request.image();
+
+        validateImage(image);
+
+        String storedFileName = createStoredFileName(image.getOriginalFilename());
+        Path uploadRootPath = Path.of(imageUploadPath);
+        Path targetPath = uploadRootPath.resolve(storedFileName);
+
+        try {
+            Files.createDirectories(uploadRootPath);
+            Files.copy(image.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException exception) {
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED);
+        }
+
+        return new ImageUploadResponse(imageUrlPrefix + storedFileName);
+    }
+
+    private void validateImage(MultipartFile image) {
+        if (image == null || image.isEmpty()) {
+            throw new BusinessException(ErrorCode.EMPTY_UPLOAD_FILE);
+        }
+
+        if (!ALLOWED_CONTENT_TYPES.contains(image.getContentType())) {
+            throw new BusinessException(ErrorCode.INVALID_UPLOAD_FILE_TYPE);
+        }
+    }
+
+    private String createStoredFileName(String originalFilename) {
+        String extension = extractExtension(originalFilename);
+        return UUID.randomUUID() + extension;
+    }
+
+    private String extractExtension(String originalFilename) {
+        if (originalFilename == null || !originalFilename.contains(".")) {
+            throw new BusinessException(ErrorCode.INVALID_UPLOAD_FILE_TYPE);
+        }
+
+        return originalFilename.substring(originalFilename.lastIndexOf('.'));
+    }
+}
