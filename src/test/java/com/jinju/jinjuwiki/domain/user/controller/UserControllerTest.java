@@ -1,103 +1,117 @@
 package com.jinju.jinjuwiki.domain.user.controller;
 
-import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
-import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
-import com.jinju.jinjuwiki.domain.auth.dto.request.LoginRequest;
-import com.jinju.jinjuwiki.domain.auth.dto.request.SignupRequest;
-import com.jinju.jinjuwiki.domain.auth.dto.response.LoginResponse;
-import com.jinju.jinjuwiki.domain.auth.repository.EmailVerificationRepository;
-import com.jinju.jinjuwiki.domain.auth.service.AuthService;
-import com.jinju.jinjuwiki.domain.auth.service.EmailSender;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.jinju.jinjuwiki.domain.user.dto.response.UserProfileResponse;
+import com.jinju.jinjuwiki.domain.user.service.UserService;
+import com.jinju.jinjuwiki.global.security.UserPrincipal;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+// 사용자 컨트롤러 단위 테스트 클래스
+@ExtendWith(MockitoExtension.class)
 class UserControllerTest {
 
-    private final AuthService authService;
-    private final EmailVerificationRepository emailVerificationRepository;
+    @Mock
+    private UserService userService;
 
-    @LocalServerPort
-    private int port;
+    @InjectMocks
+    private UserController userController;
 
-    @Autowired
-    UserControllerTest(AuthService authService, EmailVerificationRepository emailVerificationRepository) {
-        this.authService = authService;
-        this.emailVerificationRepository = emailVerificationRepository;
-    }
+    private MockMvc mockMvc;
 
-    @TestConfiguration
-    static class TestMailConfig {
-
-        @Bean
-        @Primary
-        EmailSender emailSender() {
-            return (to, code) -> {
-            };
-        }
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(userController)
+                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
+                .addFilters(new TestAuthenticationFilter())
+                .build();
     }
 
     @Test
     @DisplayName("로그인한 사용자는 자신의 프로필을 조회할 수 있다.")
-    void getMyProfileSuccess() throws IOException, InterruptedException {
+    void getMyProfileSuccess() throws Exception {
         // given
-        verifyEmail("profile@test.com");
-        authService.signup(new SignupRequest("profile@test.com", "password123", "profileUser"));
-        LoginResponse loginResponse = authService.login(new LoginRequest("profile@test.com", "password123"));
+        UserProfileResponse response = new UserProfileResponse(
+                1L,
+                "profile@test.com",
+                "profileUser",
+                "USER",
+                LocalDateTime.of(2026, 4, 9, 13, 0),
+                LocalDateTime.of(2026, 4, 9, 13, 5)
+        );
+        // stubbing
+        when(userService.getProfile(1L)).thenReturn(response);
 
-        // when
-        HttpResponse<String> response = sendProfileRequest("Bearer " + loginResponse.accessToken());
+        // when & then
+        mockMvc.perform(get("/api/users/me").header(HttpHeaders.AUTHORIZATION, "Bearer test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(1L))
+                .andExpect(jsonPath("$.data.email").value("profile@test.com"))
+                .andExpect(jsonPath("$.data.nickname").value("profileUser"))
+                .andExpect(jsonPath("$.data.role").value("USER"))
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.updatedAt").exists());
 
-        // then
-        assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.body()).contains("\"email\":\"profile@test.com\"");
-        assertThat(response.body()).contains("\"nickname\":\"profileUser\"");
-        assertThat(response.body()).contains("\"role\":\"USER\"");
-        assertThat(response.body()).contains("\"userId\":");
-        assertThat(response.body()).contains("\"createdAt\":");
-        assertThat(response.body()).contains("\"updatedAt\":");
+        verify(userService).getProfile(1L);
     }
 
     @Test
     @DisplayName("인증 없이 프로필을 조회하면 401을 반환한다.")
-    void getMyProfileUnauthorized() throws IOException, InterruptedException {
-        // when
-        HttpResponse<String> response = sendProfileRequest(null);
-
-        // then
-        assertThat(response.statusCode()).isEqualTo(401);
+    void getMyProfileUnauthorized() throws Exception {
+        // when & then
+        mockMvc.perform(get("/api/users/me"))
+                .andExpect(status().isUnauthorized());
     }
 
-    private void verifyEmail(String email) {
-        authService.sendVerificationCode(new EmailVerificationSendRequest(email));
-        String code = emailVerificationRepository.findByEmail(email).orElseThrow().getCode();
-        authService.verifyCode(new EmailVerificationVerifyRequest(email, code));
-    }
+    // 테스트용 인증 필터 클래스
+    private static final class TestAuthenticationFilter extends OncePerRequestFilter {
 
-    private HttpResponse<String> sendProfileRequest(String authorizationHeader) throws IOException, InterruptedException {
-        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:" + port + "/api/users/me"))
-                .GET();
+        @Override
+        protected void doFilterInternal(
+                HttpServletRequest request,
+                HttpServletResponse response,
+                FilterChain filterChain
+        ) throws ServletException, IOException {
+            String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        if (authorizationHeader != null) {
-            requestBuilder.header(HttpHeaders.AUTHORIZATION, authorizationHeader);
+            if (authorization == null || !authorization.startsWith("Bearer ")) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
+
+            UserPrincipal principal = new UserPrincipal(1L, "profile@test.com", "encoded-password", "USER");
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+
+            try {
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                filterChain.doFilter(request, response);
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
         }
-
-        return HttpClient.newHttpClient().send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
     }
 }
