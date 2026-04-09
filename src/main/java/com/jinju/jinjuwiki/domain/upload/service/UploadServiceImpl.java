@@ -11,6 +11,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,8 +27,11 @@ public class UploadServiceImpl implements UploadService {
             "image/gif"
     );
 
-    private static final Path UPLOAD_ROOT_PATH = Path.of("uploads", "images");
-    private static final String UPLOAD_URL_PREFIX = "/uploads/images/";
+    @Value("${app.upload.image-path}")
+    private String imageUploadPath;
+
+    @Value("${app.upload.image-url-prefix}")
+    private String imageUrlPrefix;
 
     @Override
     public ImageUploadResponse uploadImage(ImageUploadRequest request) {
@@ -36,16 +40,17 @@ public class UploadServiceImpl implements UploadService {
         validateImage(image);
 
         String storedFileName = createStoredFileName(image.getOriginalFilename());
-        Path targetPath = UPLOAD_ROOT_PATH.resolve(storedFileName);
+        Path uploadRootPath = Path.of(imageUploadPath);
+        Path targetPath = uploadRootPath.resolve(storedFileName);
 
         try {
-            Files.createDirectories(UPLOAD_ROOT_PATH);
+            Files.createDirectories(uploadRootPath);
             Files.copy(image.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException exception) {
             throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
 
-        return new ImageUploadResponse(UPLOAD_URL_PREFIX + storedFileName);
+        return new ImageUploadResponse(imageUrlPrefix + storedFileName);
     }
 
     private void validateImage(MultipartFile image) {
