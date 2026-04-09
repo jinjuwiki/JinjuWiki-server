@@ -154,6 +154,8 @@ public class AuthServiceImpl implements AuthService {
                     .expiresAt(expiresAt)
                     .build());
         }
+
+        emailSender.sendPasswordResetLink(request.email(), token);
     }
 
     private String generateVerificationCode() {

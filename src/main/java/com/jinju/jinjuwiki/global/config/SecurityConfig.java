@@ -29,6 +29,7 @@ public class SecurityConfig {
     private static final String AUTH_EMAIL_VERIFY_PATH = "/api/auth/email/verify";
     private static final String AUTH_SIGNUP_PATH = "/api/auth/signup";
     private static final String AUTH_LOGIN_PATH = "/api/auth/login";
+    private static final String AUTH_PASSWORD_RESET_REQUEST_PATH = "/api/auth/password/reset/request";
     private static final String CATEGORY_LIST_PATH = "/api/categories";
     private static final String DOCUMENT_LIST_PATH = "/api/documents";
     private static final String DOCUMENT_DETAIL_PATH = "/api/documents/*";
@@ -48,7 +49,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, AUTH_EMAIL_SEND_PATH, AUTH_EMAIL_VERIFY_PATH).permitAll()
-                        .requestMatchers(HttpMethod.POST, AUTH_SIGNUP_PATH, AUTH_LOGIN_PATH).permitAll()
+                        .requestMatchers(HttpMethod.POST, AUTH_SIGNUP_PATH, AUTH_LOGIN_PATH, AUTH_PASSWORD_RESET_REQUEST_PATH)
+                        .permitAll()
                         .requestMatchers(HttpMethod.GET, CATEGORY_LIST_PATH).permitAll()
                         .requestMatchers(HttpMethod.GET, UPLOAD_IMAGE_RESOURCE_PATH).permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
