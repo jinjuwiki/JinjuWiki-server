@@ -3,15 +3,19 @@ package com.jinju.jinjuwiki.domain.auth.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.LoginRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.SignupRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.LoginResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.response.SignupResponse;
+import com.jinju.jinjuwiki.domain.auth.entity.PasswordResetToken;
 import com.jinju.jinjuwiki.domain.auth.repository.EmailVerificationRepository;
+import com.jinju.jinjuwiki.domain.auth.repository.PasswordResetTokenRepository;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.entity.UserRole;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
@@ -38,6 +42,9 @@ class AuthServiceTest {
 
     @Mock
     private EmailVerificationRepository emailVerificationRepository;
+
+    @Mock
+    private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Mock
     private AuthValidationService authValidationService;
@@ -149,5 +156,76 @@ class AuthServiceTest {
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_LOGIN);
         verify(userRepository).findByEmail("wrong@test.com");
         verify(passwordEncoder).matches("bad-password", "encoded-password");
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 요청이 오면 토큰을 저장하고 메일을 발송한다.")
+    void requestPasswordResetSuccess() {
+        // given
+        PasswordResetRequest request = new PasswordResetRequest("reset@test.com");
+        User user = User.builder()
+                .email("reset@test.com")
+                .password("encoded-password")
+                .nickname("resetUser")
+                .role(UserRole.USER)
+                .build();
+        when(userRepository.findByEmail("reset@test.com")).thenReturn(Optional.of(user));
+        when(passwordResetTokenRepository.findByEmail("reset@test.com")).thenReturn(Optional.empty());
+        ReflectionTestUtils.setField(authService, "passwordResetExpirationMinutes", 30L);
+
+        // when
+        authService.requestPasswordReset(request);
+
+        // then
+        verify(userRepository).findByEmail("reset@test.com");
+        verify(passwordResetTokenRepository).findByEmail("reset@test.com");
+        verify(passwordResetTokenRepository).save(any(PasswordResetToken.class));
+        verify(emailSender).sendPasswordResetLink(eq("reset@test.com"), any(String.class));
+    }
+
+    @Test
+    @DisplayName("이미 발급된 재설정 토큰이 있으면 갱신한다.")
+    void requestPasswordResetReissueSuccess() {
+        // given
+        PasswordResetRequest request = new PasswordResetRequest("reset@test.com");
+        User user = User.builder()
+                .email("reset@test.com")
+                .password("encoded-password")
+                .nickname("resetUser")
+                .role(UserRole.USER)
+                .build();
+        PasswordResetToken token = PasswordResetToken.builder()
+                .email("reset@test.com")
+                .token("old-token")
+                .expiresAt(java.time.LocalDateTime.now().plusMinutes(5))
+                .build();
+        when(userRepository.findByEmail("reset@test.com")).thenReturn(Optional.of(user));
+        when(passwordResetTokenRepository.findByEmail("reset@test.com")).thenReturn(Optional.of(token));
+        ReflectionTestUtils.setField(authService, "passwordResetExpirationMinutes", 30L);
+
+        // when
+        authService.requestPasswordReset(request);
+
+        // then
+        assertThat(token.getToken()).isNotEqualTo("old-token");
+        verify(passwordResetTokenRepository).findByEmail("reset@test.com");
+        verify(emailSender).sendPasswordResetLink("reset@test.com", token.getToken());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 이메일로 재설정 요청하면 예외가 발생한다.")
+    void requestPasswordResetFailWhenUserNotFound() {
+        // given
+        PasswordResetRequest request = new PasswordResetRequest("missing@test.com");
+        when(userRepository.findByEmail("missing@test.com")).thenReturn(Optional.empty());
+
+        // when
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> authService.requestPasswordReset(request)
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
     }
 }
