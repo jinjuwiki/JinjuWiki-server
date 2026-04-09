@@ -33,7 +33,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
-// 문서 서비스 단위 테스트 클래스
+// 문서 서비스 Mockito 단위 테스트 클래스
 @ExtendWith(MockitoExtension.class)
 class DocumentServiceTest {
 
@@ -66,8 +66,6 @@ class DocumentServiceTest {
                 .category(category)
                 .build();
         ReflectionTestUtils.setField(savedDocument, "id", 100L);
-
-        // stubbing
         when(userRepository.findById(1L)).thenReturn(Optional.of(author));
         when(categoryRepository.findById(10L)).thenReturn(Optional.of(category));
         when(documentRepository.save(any(Document.class))).thenReturn(savedDocument);
@@ -129,11 +127,24 @@ class DocumentServiceTest {
     @DisplayName("문서 목록은 최신순으로 페이지 조회할 수 있다.")
     void getDocumentsSuccess() {
         // given
-        Document older = createDocument(301L, "첫 번째 글", "내용 1", createUser(3L, "doc3@test.com", "docUser3"), createCategory(30L, "사건사고"));
-        Document newer = createDocument(302L, "두 번째 글", "내용 2", createUser(3L, "doc3@test.com", "docUser3"), createCategory(30L, "사건사고"));
+        Document older = createDocument(
+                301L,
+                "첫 번째 글",
+                "내용 1",
+                createUser(3L, "doc3@test.com", "docUser3"),
+                createCategory(30L, "사건사고")
+        );
+        Document newer = createDocument(
+                302L,
+                "두 번째 글",
+                "내용 2",
+                createUser(3L, "doc3@test.com", "docUser3"),
+                createCategory(30L, "사건사고")
+        );
         Page<Document> pageResponse = new PageImpl<>(List.of(newer, older));
 
-        when(documentRepository.findByCategoryIdOrderByCreatedAtDesc(eq(30L), any(Pageable.class))).thenReturn(pageResponse);
+        when(documentRepository.findByCategoryIdOrderByCreatedAtDesc(eq(30L), any(Pageable.class)))
+                .thenReturn(pageResponse);
 
         // when
         Page<Document> response = documentService.getDocuments(30L, 0, 10);
@@ -152,8 +163,6 @@ class DocumentServiceTest {
         Category category = createCategory(40L, "학교");
         Category updatedCategory = createCategory(41L, "선생님");
         Document document = createDocument(400L, "원래 제목", "원래 본문", author, category);
-
-        // stubbing
         when(documentDomainService.getDocument(400L)).thenReturn(document);
         doNothing().when(documentDomainService).validateAuthor(document, 4L);
         when(categoryRepository.findById(41L)).thenReturn(Optional.of(updatedCategory));
@@ -193,7 +202,11 @@ class DocumentServiceTest {
         // when
         BusinessException exception = assertThrows(
                 BusinessException.class,
-                () -> documentService.updateDocument(500L, new DocumentUpdateRequest("수정 제목", "수정 본문", 50L), 6L)
+                () -> documentService.updateDocument(
+                        500L,
+                        new DocumentUpdateRequest("수정 제목", "수정 본문", 50L),
+                        6L
+                )
         );
 
         // then
@@ -213,7 +226,6 @@ class DocumentServiceTest {
                 createUser(7L, "doc7@test.com", "docUser7"),
                 createCategory(70L, "기타")
         );
-        // stubbing
         when(documentDomainService.getDocument(700L)).thenReturn(document);
         doNothing().when(documentDomainService).validateAuthor(document, 7L);
 
@@ -237,7 +249,6 @@ class DocumentServiceTest {
                 createUser(8L, "doc8@test.com", "author8"),
                 createCategory(80L, "학교")
         );
-        // stubbing
         when(documentDomainService.getDocument(800L)).thenReturn(document);
         doThrow(new BusinessException(ErrorCode.FORBIDDEN_DOCUMENT_ACCESS))
                 .when(documentDomainService)
@@ -267,7 +278,6 @@ class DocumentServiceTest {
                 createCategory(100L, "학생")
         );
         Page<Document> searchResult = new PageImpl<>(List.of(document));
-        // stubbing
         when(documentRepository.searchByKeyword(eq("공부"), any(Pageable.class))).thenReturn(searchResult);
 
         // when
@@ -291,7 +301,6 @@ class DocumentServiceTest {
                 createCategory(110L, "학생")
         );
         Page<Document> searchResult = new PageImpl<>(List.of(document));
-        // stubbing
         when(documentRepository.searchByCategoryAndKeyword(eq(110L), eq("시험"), any(Pageable.class)))
                 .thenReturn(searchResult);
 
