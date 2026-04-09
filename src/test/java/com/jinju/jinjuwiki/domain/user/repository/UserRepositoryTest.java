@@ -40,11 +40,11 @@ class UserRepositoryTest {
         DataIntegrityViolationException exception = assertThrows(
                 DataIntegrityViolationException.class,
                 () -> userRepository.saveAndFlush(User.builder()
-                .email("dbdup@test.com")
-                .password("encoded-password")
-                .nickname("dbUser2")
-                .role(UserRole.USER)
-                .build())
+                        .email("dbdup@test.com")
+                        .password("encoded-password")
+                        .nickname("dbUser2")
+                        .role(UserRole.USER)
+                        .build())
         );
 
         // then

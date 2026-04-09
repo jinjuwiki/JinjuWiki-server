@@ -127,11 +127,24 @@ class DocumentServiceTest {
     @DisplayName("문서 목록은 최신순으로 페이지 조회할 수 있다.")
     void getDocumentsSuccess() {
         // given
-        Document older = createDocument(301L, "첫 번째 글", "내용 1", createUser(3L, "doc3@test.com", "docUser3"), createCategory(30L, "사건사고"));
-        Document newer = createDocument(302L, "두 번째 글", "내용 2", createUser(3L, "doc3@test.com", "docUser3"), createCategory(30L, "사건사고"));
+        Document older = createDocument(
+                301L,
+                "첫 번째 글",
+                "내용 1",
+                createUser(3L, "doc3@test.com", "docUser3"),
+                createCategory(30L, "사건사고")
+        );
+        Document newer = createDocument(
+                302L,
+                "두 번째 글",
+                "내용 2",
+                createUser(3L, "doc3@test.com", "docUser3"),
+                createCategory(30L, "사건사고")
+        );
         Page<Document> pageResponse = new PageImpl<>(List.of(newer, older));
 
-        when(documentRepository.findByCategoryIdOrderByCreatedAtDesc(eq(30L), any(Pageable.class))).thenReturn(pageResponse);
+        when(documentRepository.findByCategoryIdOrderByCreatedAtDesc(eq(30L), any(Pageable.class)))
+                .thenReturn(pageResponse);
 
         // when
         Page<Document> response = documentService.getDocuments(30L, 0, 10);
@@ -189,7 +202,11 @@ class DocumentServiceTest {
         // when
         BusinessException exception = assertThrows(
                 BusinessException.class,
-                () -> documentService.updateDocument(500L, new DocumentUpdateRequest("수정 제목", "수정 본문", 50L), 6L)
+                () -> documentService.updateDocument(
+                        500L,
+                        new DocumentUpdateRequest("수정 제목", "수정 본문", 50L),
+                        6L
+                )
         );
 
         // then
