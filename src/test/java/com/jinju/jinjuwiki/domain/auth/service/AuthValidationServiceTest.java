@@ -19,7 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-// 인증 검증 서비스 단위 테스트 클래스
+// 인증 검증 서비스 Mockito 단위 테스트 클래스
 @ExtendWith(MockitoExtension.class)
 class AuthValidationServiceTest {
 

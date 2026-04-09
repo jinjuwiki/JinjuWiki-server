@@ -31,7 +31,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-// 사용자 컨트롤러 단위 테스트 클래스
+// 사용자 컨트롤러 MockMvc 단위 테스트 클래스
 @ExtendWith(MockitoExtension.class)
 class UserControllerTest {
 

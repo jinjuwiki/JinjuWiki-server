@@ -33,7 +33,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
-// 문서 서비스 단위 테스트 클래스
+// 문서 서비스 Mockito 단위 테스트 클래스
 @ExtendWith(MockitoExtension.class)
 class DocumentServiceTest {
 

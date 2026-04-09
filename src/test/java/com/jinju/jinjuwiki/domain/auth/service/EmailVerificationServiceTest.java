@@ -25,7 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-// 이메일 인증 흐름 단위 테스트 클래스
+// 이메일 인증 흐름 Mockito 단위 테스트 클래스
 @ExtendWith(MockitoExtension.class)
 class EmailVerificationServiceTest {
 
