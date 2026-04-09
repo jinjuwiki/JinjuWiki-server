@@ -110,6 +110,7 @@ class AuthServiceTest {
                 .role(UserRole.USER)
                 .build();
 
+        // stubbing
         when(userRepository.findByEmail("login@test.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password123", "encoded-password")).thenReturn(true);
         when(jwtTokenProvider.createAccessToken(any(UserPrincipal.class))).thenReturn("access-token");
@@ -137,6 +138,7 @@ class AuthServiceTest {
                 .nickname("wrongUser")
                 .role(UserRole.USER)
                 .build();
+        // stubbing
         when(userRepository.findByEmail("wrong@test.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("bad-password", "encoded-password")).thenReturn(false);
 
