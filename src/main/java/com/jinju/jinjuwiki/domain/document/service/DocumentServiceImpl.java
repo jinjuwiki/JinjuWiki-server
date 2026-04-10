@@ -7,6 +7,7 @@ import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.document.support.DocumentContentJsonCodec;
+import com.jinju.jinjuwiki.domain.search.service.DocumentViewLogService;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import com.jinju.jinjuwiki.global.error.BusinessException;
@@ -26,6 +27,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final DocumentDomainService documentDomainService;
+    private final DocumentViewLogService documentViewLogService;
 
     @Override
     @Transactional
@@ -50,10 +52,12 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public Document getDocument(Long id) {
+    public Document getDocument(Long id, Long viewerUserId, String viewerIp) {
         Document document = documentDomainService.getDocument(id);
 
-        document.increaseViewCount();
+        if (recordDocumentView(document, viewerUserId, viewerIp)) {
+            document.increaseViewCount();
+        }
         return document;
     }
 
@@ -105,5 +109,28 @@ public class DocumentServiceImpl implements DocumentService {
         Document document = documentDomainService.getDocument(id);
         documentDomainService.validateAuthor(document, currentUserId);
         documentRepository.delete(document);
+    }
+
+    // 문서 조회 사용자 식별 분기 메서드
+    private boolean recordDocumentView(Document document, Long viewerUserId, String viewerIp) {
+        if (viewerUserId != null) {
+            return recordUserDocumentView(document, viewerUserId);
+        }
+
+        return recordAnonymousDocumentView(document, viewerIp);
+    }
+
+    // 로그인 사용자 조회 처리 메서드
+    private boolean recordUserDocumentView(Document document, Long viewerUserId) {
+        return documentViewLogService.save(document, viewerUserId, null);
+    }
+
+    // 비로그인 사용자 조회 처리 메서드
+    private boolean recordAnonymousDocumentView(Document document, String viewerIp) {
+        if (viewerIp == null || viewerIp.isBlank()) {
+            return false;
+        }
+
+        return documentViewLogService.save(document, null, viewerIp);
     }
 }

@@ -34,6 +34,7 @@ public class SecurityConfig {
     private static final String DOCUMENT_LIST_PATH = "/api/documents";
     private static final String DOCUMENT_DETAIL_PATH = "/api/documents/*";
     private static final String DOCUMENT_SEARCH_PATH = "/api/documents/search";
+    private static final String SEARCH_TRENDING_PATH = "/api/search/trending";
     private static final String UPLOAD_IMAGE_PATH = "/api/uploads/images";
     private static final String UPLOAD_IMAGE_RESOURCE_PATH = "/uploads/images/**";
 
@@ -55,7 +56,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, UPLOAD_IMAGE_RESOURCE_PATH).permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers(HttpMethod.GET, DOCUMENT_LIST_PATH, DOCUMENT_SEARCH_PATH, DOCUMENT_DETAIL_PATH).permitAll()
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                DOCUMENT_LIST_PATH,
+                                DOCUMENT_SEARCH_PATH,
+                                DOCUMENT_DETAIL_PATH,
+                                SEARCH_TRENDING_PATH
+                        ).permitAll()
                         .requestMatchers(HttpMethod.POST, UPLOAD_IMAGE_PATH).authenticated()
                         .requestMatchers(HttpMethod.POST, DOCUMENT_LIST_PATH).authenticated()
                         .requestMatchers(HttpMethod.PUT, DOCUMENT_DETAIL_PATH).authenticated()

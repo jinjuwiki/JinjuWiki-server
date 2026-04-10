@@ -90,7 +90,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return "/api/auth/email/send".equals(requestUri)
                 || "/api/auth/email/verify".equals(requestUri)
                 || "/api/auth/signup".equals(requestUri)
-                || "/api/auth/login".equals(requestUri);
+                || "/api/auth/login".equals(requestUri)
+                || "/api/auth/password/reset/request".equals(requestUri);
     }
 
     // 공개 조회 경로 확인 함수
@@ -98,6 +99,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return "/api/categories".equals(requestUri)
                 || "/api/documents".equals(requestUri)
                 || "/api/documents/search".equals(requestUri)
+                || "/api/search/trending".equals(requestUri)
+                || requestUri.startsWith("/uploads/images/")
                 || requestUri.startsWith("/api/documents/");
     }
 

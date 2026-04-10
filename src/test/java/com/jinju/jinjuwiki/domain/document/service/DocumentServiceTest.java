@@ -18,6 +18,7 @@ import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.document.support.DocumentContentJsonCodec;
+import com.jinju.jinjuwiki.domain.search.service.DocumentViewLogService;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.entity.UserRole;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
@@ -53,6 +54,9 @@ class DocumentServiceTest {
 
     @Mock
     private DocumentDomainService documentDomainService;
+
+    @Mock
+    private DocumentViewLogService documentViewLogService;
 
     @InjectMocks
     private DocumentServiceImpl documentService;
@@ -139,14 +143,16 @@ class DocumentServiceTest {
         ReflectionTestUtils.setField(document, "id", 200L);
 
         when(documentDomainService.getDocument(200L)).thenReturn(document);
+        when(documentViewLogService.save(document, 2L, null)).thenReturn(true);
 
         // when
-        Document response = documentService.getDocument(200L);
+        Document response = documentService.getDocument(200L, 2L, "127.0.0.1");
 
         // then
         assertThat(response.getId()).isEqualTo(200L);
         assertThat(response.getViewCount()).isEqualTo(1L);
         verify(documentDomainService).getDocument(200L);
+        verify(documentViewLogService).save(document, 2L, null);
     }
 
     @Test
