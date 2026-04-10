@@ -1,6 +1,8 @@
 package com.jinju.jinjuwiki.domain.search.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +42,8 @@ class DocumentViewLogServiceTest {
         Document document = createDocument(1L, "급상승 문서");
         User user = createUser(2L, "viewer@test.com", "viewer");
         when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(documentViewLogRepository.countByDocumentIdAndUserIdAndCreatedAtAfter(eq(1L), eq(2L), any()))
+                .thenReturn(0L);
 
         // when
         documentViewLogService.save(document, 2L, null);
@@ -47,7 +51,53 @@ class DocumentViewLogServiceTest {
         // then
         verify(documentViewLogRepository).save(any(DocumentViewLog.class));
     }
-    
+
+    @Test
+    @DisplayName("같은 사용자의 문서 조회는 최근 1시간 동안 최대 3회만 반영한다.")
+    void saveUserViewLogSkipWhenUserLimitExceeded() {
+        // given
+        Document document = createDocument(1L, "급상승 문서");
+        when(documentViewLogRepository.countByDocumentIdAndUserIdAndCreatedAtAfter(eq(1L), eq(2L), any()))
+                .thenReturn(3L);
+
+        // when
+        documentViewLogService.save(document, 2L, null);
+
+        // then
+        verify(documentViewLogRepository, never()).save(any(DocumentViewLog.class));
+        verify(userRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("같은 IP의 문서 조회는 최근 1시간 동안 최대 3회만 반영한다.")
+    void saveAnonymousViewLogSkipWhenIpLimitExceeded() {
+        // given
+        Document document = createDocument(1L, "급상승 문서");
+        when(documentViewLogRepository.countByDocumentIdAndViewerIpAndCreatedAtAfter(eq(1L), eq("127.0.0.1"), any()))
+                .thenReturn(3L);
+
+        // when
+        documentViewLogService.save(document, null, "127.0.0.1");
+
+        // then
+        verify(documentViewLogRepository, never()).save(any(DocumentViewLog.class));
+    }
+
+    @Test
+    @DisplayName("제한을 넘지 않은 IP 조회는 로그를 저장할 수 있다.")
+    void saveAnonymousViewLogSuccess() {
+        // given
+        Document document = createDocument(1L, "급상승 문서");
+        when(documentViewLogRepository.countByDocumentIdAndViewerIpAndCreatedAtAfter(eq(1L), eq("127.0.0.1"), any()))
+                .thenReturn(2L);
+
+        // when
+        documentViewLogService.save(document, null, "127.0.0.1");
+
+        // then
+        verify(documentViewLogRepository).save(any(DocumentViewLog.class));
+    }
+
     // 테스트용 사용자 생성 함수
     private User createUser(Long id, String email, String nickname) {
         User user = User.builder()
