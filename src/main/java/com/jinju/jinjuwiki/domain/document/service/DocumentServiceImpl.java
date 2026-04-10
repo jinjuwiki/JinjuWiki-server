@@ -108,6 +108,21 @@ public class DocumentServiceImpl implements DocumentService {
         documentRepository.delete(document);
     }
 
+    // 문서 조회 사용자 식별 분기 메서드
     private void recordDocumentView(Document document, Long viewerUserId, String viewerIp) {
+        if (viewerUserId != null) {
+            recordUserDocumentView(document, viewerUserId);
+            return;
+        }
+
+        recordAnonymousDocumentView(document, viewerIp);
+    }
+
+    // 로그인 사용자 조회 처리 메서드
+    private void recordUserDocumentView(Document document, Long viewerUserId) {
+    }
+
+    // 비로그인 사용자 조회 처리 메서드
+    private void recordAnonymousDocumentView(Document document, String viewerIp) {
     }
 }
