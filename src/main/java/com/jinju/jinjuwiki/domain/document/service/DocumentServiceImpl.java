@@ -7,6 +7,7 @@ import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.document.support.DocumentContentJsonCodec;
+import com.jinju.jinjuwiki.domain.search.service.DocumentViewLogService;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import com.jinju.jinjuwiki.global.error.BusinessException;
@@ -26,6 +27,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final DocumentDomainService documentDomainService;
+    private final DocumentViewLogService documentViewLogService;
 
     @Override
     @Transactional
@@ -120,6 +122,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     // 로그인 사용자 조회 처리 메서드
     private void recordUserDocumentView(Document document, Long viewerUserId) {
+        documentViewLogService.save(document, viewerUserId, null);
     }
 
     // 비로그인 사용자 조회 처리 메서드
@@ -127,5 +130,7 @@ public class DocumentServiceImpl implements DocumentService {
         if (viewerIp == null || viewerIp.isBlank()) {
             return;
         }
+
+        documentViewLogService.save(document, null, viewerIp);
     }
 }
