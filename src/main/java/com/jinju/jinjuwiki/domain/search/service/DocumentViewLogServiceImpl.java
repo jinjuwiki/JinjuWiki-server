@@ -43,7 +43,12 @@ public class DocumentViewLogServiceImpl implements DocumentViewLogService {
             return false;
         }
 
-        return redisDocumentViewLimiter.isAllowed(document.getId(), viewerUserId, viewerIp);
+        try {
+            return redisDocumentViewLimiter.isAllowed(document.getId(), viewerUserId, viewerIp);
+        } catch (RuntimeException exception) {
+            // Redis 장애 시 문서 조회 API 보호용 fail-open 정책
+            return true;
+        }
     }
 
     // 로그인 사용자 조회자 조회 메서드

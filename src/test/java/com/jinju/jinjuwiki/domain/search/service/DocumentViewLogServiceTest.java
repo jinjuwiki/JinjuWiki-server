@@ -101,6 +101,24 @@ class DocumentViewLogServiceTest {
         verify(redisDocumentViewLimiter).isAllowed(1L, null, "127.0.0.1");
     }
 
+    @Test
+    @DisplayName("Redis limiter 장애가 발생해도 문서 조회 로그 저장은 계속 진행한다.")
+    void saveViewLogSuccessWhenRedisLimiterFails() {
+        // given
+        Document document = createDocument(1L, "급상승 문서");
+        User user = createUser(2L, "viewer@test.com", "viewer");
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(redisDocumentViewLimiter.isAllowed(1L, 2L, null)).thenThrow(new RuntimeException("redis unavailable"));
+
+        // when
+        documentViewLogService.save(document, 2L, null);
+
+        // then
+        verify(documentViewLogRepository).save(any(DocumentViewLog.class));
+        verify(userRepository).findById(2L);
+        verify(redisDocumentViewLimiter).isAllowed(1L, 2L, null);
+    }
+
     // 테스트용 사용자 생성 메서드
     private User createUser(Long id, String email, String nickname) {
         User user = User.builder()
