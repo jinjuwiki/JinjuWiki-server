@@ -143,6 +143,7 @@ class DocumentServiceTest {
         ReflectionTestUtils.setField(document, "id", 200L);
 
         when(documentDomainService.getDocument(200L)).thenReturn(document);
+        when(documentViewLogService.save(document, 2L, null)).thenReturn(true);
 
         // when
         Document response = documentService.getDocument(200L, 2L, "127.0.0.1");

@@ -24,13 +24,13 @@ public class DocumentViewLogServiceImpl implements DocumentViewLogService {
 
     @Override
     @Transactional
-    public void save(Document document, Long viewerUserId, String viewerIp) {
+    public boolean save(Document document, Long viewerUserId, String viewerIp) {
         if (hasExceededUserViewLimit(document, viewerUserId)) {
-            return;
+            return false;
         }
 
         if (hasExceededIpViewLimit(document, viewerUserId, viewerIp)) {
-            return;
+            return false;
         }
 
         User viewer = resolveViewer(viewerUserId);
@@ -40,6 +40,7 @@ public class DocumentViewLogServiceImpl implements DocumentViewLogService {
                 .user(viewer)
                 .viewerIp(viewerIp)
                 .build());
+        return true;
     }
 
     // 로그인 사용자 조회자 조회 메서드

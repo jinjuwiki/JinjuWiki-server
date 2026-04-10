@@ -55,8 +55,9 @@ public class DocumentServiceImpl implements DocumentService {
     public Document getDocument(Long id, Long viewerUserId, String viewerIp) {
         Document document = documentDomainService.getDocument(id);
 
-        document.increaseViewCount();
-        recordDocumentView(document, viewerUserId, viewerIp);
+        if (recordDocumentView(document, viewerUserId, viewerIp)) {
+            document.increaseViewCount();
+        }
         return document;
     }
 
@@ -111,26 +112,25 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     // 문서 조회 사용자 식별 분기 메서드
-    private void recordDocumentView(Document document, Long viewerUserId, String viewerIp) {
+    private boolean recordDocumentView(Document document, Long viewerUserId, String viewerIp) {
         if (viewerUserId != null) {
-            recordUserDocumentView(document, viewerUserId);
-            return;
+            return recordUserDocumentView(document, viewerUserId);
         }
 
-        recordAnonymousDocumentView(document, viewerIp);
+        return recordAnonymousDocumentView(document, viewerIp);
     }
 
     // 로그인 사용자 조회 처리 메서드
-    private void recordUserDocumentView(Document document, Long viewerUserId) {
-        documentViewLogService.save(document, viewerUserId, null);
+    private boolean recordUserDocumentView(Document document, Long viewerUserId) {
+        return documentViewLogService.save(document, viewerUserId, null);
     }
 
     // 비로그인 사용자 조회 처리 메서드
-    private void recordAnonymousDocumentView(Document document, String viewerIp) {
+    private boolean recordAnonymousDocumentView(Document document, String viewerIp) {
         if (viewerIp == null || viewerIp.isBlank()) {
-            return;
+            return false;
         }
 
-        documentViewLogService.save(document, null, viewerIp);
+        return documentViewLogService.save(document, null, viewerIp);
     }
 }
