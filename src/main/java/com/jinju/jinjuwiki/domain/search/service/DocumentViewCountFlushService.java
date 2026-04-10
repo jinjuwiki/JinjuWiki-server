@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DocumentViewCountFlushService {
 
     private static final String VIEW_COUNT_BUFFER_KEY = "document:view-count:pending";
+    private static final String VIEW_COUNT_PROCESSING_KEY = "document:view-count:processing";
     private static final String VIEW_COUNT_FLUSH_LOCK_KEY = "document:view-count:flush-lock";
     private static final Duration VIEW_COUNT_FLUSH_LOCK_TTL = Duration.ofSeconds(55);
 
@@ -31,7 +32,7 @@ public class DocumentViewCountFlushService {
 
         HashOperations<String, Object, Object> hashOperations = stringRedisTemplate.opsForHash();
         try {
-            Map<Object, Object> pendingEntries = hashOperations.entries(VIEW_COUNT_BUFFER_KEY);
+            Map<Object, Object> pendingEntries = drainPendingEntries(hashOperations);
             int flushedCount = 0;
 
             for (Map.Entry<Object, Object> pendingEntry : pendingEntries.entrySet()) {
@@ -39,7 +40,7 @@ public class DocumentViewCountFlushService {
                 long delta = parseViewCountDelta(pendingEntry.getValue());
 
                 if (documentRepository.incrementViewCountBy(documentId, delta) > 0) {
-                    hashOperations.delete(VIEW_COUNT_BUFFER_KEY, pendingEntry.getKey().toString());
+                    hashOperations.delete(VIEW_COUNT_PROCESSING_KEY, pendingEntry.getKey().toString());
                     flushedCount++;
                 }
             }
@@ -58,6 +59,25 @@ public class DocumentViewCountFlushService {
     // Redis 해시 value 조회수 delta 변환 메서드
     private long parseViewCountDelta(Object rawDelta) {
         return Long.parseLong(rawDelta.toString());
+    }
+
+    // pending 해시를 processing 해시로 분리하는 메서드
+    private Map<Object, Object> drainPendingEntries(HashOperations<String, Object, Object> hashOperations) {
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(VIEW_COUNT_PROCESSING_KEY))) {
+            Map<Object, Object> processingEntries = hashOperations.entries(VIEW_COUNT_PROCESSING_KEY);
+            if (!processingEntries.isEmpty()) {
+                return processingEntries;
+            }
+
+            stringRedisTemplate.delete(VIEW_COUNT_PROCESSING_KEY);
+        }
+
+        if (!Boolean.TRUE.equals(stringRedisTemplate.hasKey(VIEW_COUNT_BUFFER_KEY))) {
+            return Map.of();
+        }
+
+        stringRedisTemplate.rename(VIEW_COUNT_BUFFER_KEY, VIEW_COUNT_PROCESSING_KEY);
+        return hashOperations.entries(VIEW_COUNT_PROCESSING_KEY);
     }
 
     // flush 분산 락 획득 메서드

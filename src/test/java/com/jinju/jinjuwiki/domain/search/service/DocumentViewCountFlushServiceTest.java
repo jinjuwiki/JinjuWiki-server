@@ -45,7 +45,9 @@ class DocumentViewCountFlushServiceTest {
         when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
         when(valueOperations.setIfAbsent("document:view-count:flush-lock", "locked", Duration.ofSeconds(55)))
                 .thenReturn(true);
-        when(hashOperations.entries("document:view-count:pending")).thenReturn(Map.of("10", "3", "11", "2"));
+        when(stringRedisTemplate.hasKey("document:view-count:processing")).thenReturn(false);
+        when(stringRedisTemplate.hasKey("document:view-count:pending")).thenReturn(true);
+        when(hashOperations.entries("document:view-count:processing")).thenReturn(Map.of("10", "3", "11", "2"));
         when(documentRepository.incrementViewCountBy(10L, 3L)).thenReturn(1);
         when(documentRepository.incrementViewCountBy(11L, 2L)).thenReturn(1);
 
@@ -56,8 +58,9 @@ class DocumentViewCountFlushServiceTest {
         assertThat(flushedCount).isEqualTo(2);
         verify(documentRepository).incrementViewCountBy(10L, 3L);
         verify(documentRepository).incrementViewCountBy(11L, 2L);
-        verify(hashOperations).delete("document:view-count:pending", "10");
-        verify(hashOperations).delete("document:view-count:pending", "11");
+        verify(stringRedisTemplate).rename("document:view-count:pending", "document:view-count:processing");
+        verify(hashOperations).delete("document:view-count:processing", "10");
+        verify(hashOperations).delete("document:view-count:processing", "11");
         verify(stringRedisTemplate).delete("document:view-count:flush-lock");
     }
 
@@ -69,7 +72,9 @@ class DocumentViewCountFlushServiceTest {
         when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
         when(valueOperations.setIfAbsent("document:view-count:flush-lock", "locked", Duration.ofSeconds(55)))
                 .thenReturn(true);
-        when(hashOperations.entries("document:view-count:pending")).thenReturn(Map.of("10", "3"));
+        when(stringRedisTemplate.hasKey("document:view-count:processing")).thenReturn(false);
+        when(stringRedisTemplate.hasKey("document:view-count:pending")).thenReturn(true);
+        when(hashOperations.entries("document:view-count:processing")).thenReturn(Map.of("10", "3"));
         when(documentRepository.incrementViewCountBy(10L, 3L)).thenReturn(0);
 
         // when
@@ -78,7 +83,8 @@ class DocumentViewCountFlushServiceTest {
         // then
         assertThat(flushedCount).isZero();
         verify(documentRepository).incrementViewCountBy(10L, 3L);
-        verify(hashOperations, never()).delete("document:view-count:pending", "10");
+        verify(stringRedisTemplate).rename("document:view-count:pending", "document:view-count:processing");
+        verify(hashOperations, never()).delete("document:view-count:processing", "10");
         verify(stringRedisTemplate).delete("document:view-count:flush-lock");
     }
 
@@ -98,5 +104,28 @@ class DocumentViewCountFlushServiceTest {
         verify(documentRepository, never()).incrementViewCountBy(10L, 3L);
         verify(stringRedisTemplate, never()).opsForHash();
         verify(stringRedisTemplate, never()).delete("document:view-count:flush-lock");
+    }
+
+    @Test
+    @DisplayName("기존 processing 조회수가 남아 있으면 pending rename 없이 이어서 flush 한다.")
+    void flushPendingViewCountsContinueProcessingEntries() {
+        // flush 대상 Redis 해시 준비 메서드
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(stringRedisTemplate.opsForHash()).thenReturn(hashOperations);
+        when(valueOperations.setIfAbsent("document:view-count:flush-lock", "locked", Duration.ofSeconds(55)))
+                .thenReturn(true);
+        when(stringRedisTemplate.hasKey("document:view-count:processing")).thenReturn(true);
+        when(hashOperations.entries("document:view-count:processing")).thenReturn(Map.of("10", "4"));
+        when(documentRepository.incrementViewCountBy(10L, 4L)).thenReturn(1);
+
+        // when
+        int flushedCount = documentViewCountFlushService.flushPendingViewCounts();
+
+        // then
+        assertThat(flushedCount).isEqualTo(1);
+        verify(documentRepository).incrementViewCountBy(10L, 4L);
+        verify(stringRedisTemplate, never()).rename("document:view-count:pending", "document:view-count:processing");
+        verify(hashOperations).delete("document:view-count:processing", "10");
+        verify(stringRedisTemplate).delete("document:view-count:flush-lock");
     }
 }
