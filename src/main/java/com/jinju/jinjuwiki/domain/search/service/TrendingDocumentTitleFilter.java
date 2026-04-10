@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TrendingDocumentTitleFilter {
 
-    // 무시 부탁~~ ㅎㅎㅎㅎ
+    // 급상승 문서 제외 대상 금칙어 목록
     private static final List<String> BANNED_TITLE_KEYWORDS = List.of(
             "씨발",
             "병신",
@@ -46,5 +46,10 @@ public class TrendingDocumentTitleFilter {
         }
 
         return BANNED_TITLE_KEYWORDS.stream().anyMatch(title::contains);
+    }
+
+    // 급상승 문서 제목 제외 여부 확인 메서드
+    public boolean isExcludedTitle(String title) {
+        return containsPersonalInformation(title) || containsBannedExpression(title);
     }
 }

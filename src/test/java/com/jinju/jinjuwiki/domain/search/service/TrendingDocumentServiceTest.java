@@ -63,8 +63,7 @@ class TrendingDocumentServiceTest {
                 .thenReturn(projections);
         when(documentRepository.findAllById(List.of(2L, 3L, 1L, 4L, 5L, 6L))).thenReturn(documents);
         when(trendingDocumentCandidatePolicy.matchesDocumentState(org.mockito.ArgumentMatchers.any())).thenReturn(true);
-        when(trendingDocumentTitleFilter.containsPersonalInformation(org.mockito.ArgumentMatchers.anyString())).thenReturn(false);
-        when(trendingDocumentTitleFilter.containsBannedExpression(org.mockito.ArgumentMatchers.anyString())).thenReturn(false);
+        when(trendingDocumentTitleFilter.isExcludedTitle(org.mockito.ArgumentMatchers.anyString())).thenReturn(false);
 
         // when
         TrendingDocumentsResponse response = trendingDocumentService.getTrendingDocuments();
@@ -103,7 +102,7 @@ class TrendingDocumentServiceTest {
         };
     }
 
-    // 테스트용 문서 생성 함수
+    // 테스트용 문서 생성 메서드
     private Document createDocument(Long id, String title) {
         Category category = Category.builder()
                 .name("학교")

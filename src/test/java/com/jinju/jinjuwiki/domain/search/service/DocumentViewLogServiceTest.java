@@ -98,7 +98,7 @@ class DocumentViewLogServiceTest {
         verify(documentViewLogRepository).save(any(DocumentViewLog.class));
     }
 
-    // 테스트용 사용자 생성 함수
+    // 테스트용 사용자 생성 메서드
     private User createUser(Long id, String email, String nickname) {
         User user = User.builder()
                 .email(email)
@@ -110,7 +110,7 @@ class DocumentViewLogServiceTest {
         return user;
     }
 
-    // 테스트용 문서 생성 함수
+    // 테스트용 문서 생성 메서드
     private Document createDocument(Long id, String title) {
         Category category = Category.builder()
                 .name("학교")

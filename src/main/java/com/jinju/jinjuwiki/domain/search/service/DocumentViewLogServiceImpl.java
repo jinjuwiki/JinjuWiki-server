@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DocumentViewLogServiceImpl implements DocumentViewLogService {
 
-    private static final long USER_VIEW_LIMIT_PER_HOUR = 3L;
+    private static final long VIEW_LIMIT_PER_HOUR = 3L;
 
     private final DocumentViewLogRepository documentViewLogRepository;
     private final UserRepository userRepository;
@@ -58,27 +58,35 @@ public class DocumentViewLogServiceImpl implements DocumentViewLogService {
             return false;
         }
 
-        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
         long viewCount = documentViewLogRepository.countByDocumentIdAndUserIdAndCreatedAtAfter(
                 document.getId(),
                 viewerUserId,
-                oneHourAgo
+                getOneHourAgo()
         );
-        return viewCount >= USER_VIEW_LIMIT_PER_HOUR;
+        return viewCount >= VIEW_LIMIT_PER_HOUR;
     }
 
     // 비로그인 사용자 조회 제한 확인 메서드
     private boolean hasExceededIpViewLimit(Document document, Long viewerUserId, String viewerIp) {
-        if (viewerUserId != null || viewerIp == null || viewerIp.isBlank()) {
+        if (viewerUserId != null || isBlankIp(viewerIp)) {
             return false;
         }
 
-        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
         long viewCount = documentViewLogRepository.countByDocumentIdAndViewerIpAndCreatedAtAfter(
                 document.getId(),
                 viewerIp,
-                oneHourAgo
+                getOneHourAgo()
         );
-        return viewCount >= USER_VIEW_LIMIT_PER_HOUR;
+        return viewCount >= VIEW_LIMIT_PER_HOUR;
+    }
+
+    // 최근 1시간 기준 시각 생성 메서드
+    private LocalDateTime getOneHourAgo() {
+        return LocalDateTime.now().minusHours(1);
+    }
+
+    // 비로그인 조회 IP 공백 여부 확인 메서드
+    private boolean isBlankIp(String viewerIp) {
+        return viewerIp == null || viewerIp.isBlank();
     }
 }

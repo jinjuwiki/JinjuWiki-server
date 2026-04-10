@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,20 +30,12 @@ public class TrendingDocumentServiceImpl implements TrendingDocumentService {
 
     @Override
     public TrendingDocumentsResponse getTrendingDocuments() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime oneHourAgo = now.minusHours(1);
-        LocalDateTime threeHoursAgo = now.minusHours(3);
-
-        List<DocumentViewLogRepository.TrendingDocumentProjection> projections =
-                documentViewLogRepository.findTrendingDocumentsSince(oneHourAgo, threeHoursAgo);
+        List<DocumentViewLogRepository.TrendingDocumentProjection> projections = findTrendingProjections();
         Map<Long, Document> documentMap = findDocuments(projections);
 
         List<TrendingDocumentItemResponse> documents = projections.stream()
                 .map(projection -> documentMap.get(projection.getDocumentId()))
-                .filter(document -> document != null)
-                .filter(trendingDocumentCandidatePolicy::matchesDocumentState)
-                .filter(document -> !trendingDocumentTitleFilter.containsPersonalInformation(document.getTitle()))
-                .filter(document -> !trendingDocumentTitleFilter.containsBannedExpression(document.getTitle()))
+                .filter(this::isTrendingCandidate)
                 .limit(TRENDING_DOCUMENT_LIMIT)
                 .map(document -> new TrendingDocumentItemResponse(document.getId(), document.getTitle()))
                 .toList();
@@ -57,6 +50,19 @@ public class TrendingDocumentServiceImpl implements TrendingDocumentService {
                 .toList();
 
         return documentRepository.findAllById(documentIds).stream()
-                .collect(java.util.stream.Collectors.toMap(Document::getId, Function.identity()));
+                .collect(Collectors.toMap(Document::getId, Function.identity()));
+    }
+
+    // 급상승 문서 집계 조회 메서드
+    private List<DocumentViewLogRepository.TrendingDocumentProjection> findTrendingProjections() {
+        LocalDateTime now = LocalDateTime.now();
+        return documentViewLogRepository.findTrendingDocumentsSince(now.minusHours(1), now.minusHours(3));
+    }
+
+    // 급상승 문서 후보 판별 메서드
+    private boolean isTrendingCandidate(Document document) {
+        return document != null
+                && trendingDocumentCandidatePolicy.matchesDocumentState(document)
+                && !trendingDocumentTitleFilter.isExcludedTitle(document.getTitle());
     }
 }
