@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -20,12 +19,12 @@ import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.document.support.DocumentContentJsonCodec;
 import com.jinju.jinjuwiki.domain.search.service.DocumentViewLogService;
+import com.jinju.jinjuwiki.domain.search.service.RedisDocumentViewCountBuffer;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.entity.UserRole;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import com.jinju.jinjuwiki.global.error.BusinessException;
 import com.jinju.jinjuwiki.global.error.ErrorCode;
-import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -61,7 +60,7 @@ class DocumentServiceTest {
     private DocumentViewLogService documentViewLogService;
 
     @Mock
-    private EntityManager entityManager;
+    private RedisDocumentViewCountBuffer redisDocumentViewCountBuffer;
 
     @InjectMocks
     private DocumentServiceImpl documentService;
@@ -149,11 +148,7 @@ class DocumentServiceTest {
 
         when(documentDomainService.getDocument(200L)).thenReturn(document);
         when(documentViewLogService.save(document, 2L, null)).thenReturn(true);
-        when(documentRepository.incrementViewCount(200L)).thenReturn(1);
-        doAnswer(invocation -> {
-            ReflectionTestUtils.setField(document, "viewCount", 1L);
-            return null;
-        }).when(entityManager).refresh(document);
+        when(redisDocumentViewCountBuffer.increment(200L)).thenReturn(1L);
 
         // when
         Document response = documentService.getDocument(200L, 2L, "127.0.0.1");
@@ -163,8 +158,7 @@ class DocumentServiceTest {
         assertThat(response.getViewCount()).isEqualTo(1L);
         verify(documentDomainService).getDocument(200L);
         verify(documentViewLogService).save(document, 2L, null);
-        verify(documentRepository).incrementViewCount(200L);
-        verify(entityManager).refresh(document);
+        verify(redisDocumentViewCountBuffer).increment(200L);
     }
 
     @Test
