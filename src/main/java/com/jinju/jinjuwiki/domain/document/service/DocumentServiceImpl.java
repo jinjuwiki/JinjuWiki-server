@@ -12,6 +12,7 @@ import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import com.jinju.jinjuwiki.global.error.BusinessException;
 import com.jinju.jinjuwiki.global.error.ErrorCode;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +29,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final CategoryRepository categoryRepository;
     private final DocumentDomainService documentDomainService;
     private final DocumentViewLogService documentViewLogService;
+    private final EntityManager entityManager;
 
     @Override
     @Transactional
@@ -56,7 +58,7 @@ public class DocumentServiceImpl implements DocumentService {
         Document document = documentDomainService.getDocument(id);
 
         if (recordDocumentView(document, viewerUserId, viewerIp)) {
-            document.increaseViewCount();
+            refreshDocumentViewCount(document);
         }
         return document;
     }
@@ -132,5 +134,13 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         return documentViewLogService.save(document, null, viewerIp);
+    }
+
+    // 조회수 원자 증가 반영 메서드
+    private void refreshDocumentViewCount(Document document) {
+        int updatedCount = documentRepository.incrementViewCount(document.getId());
+        if (updatedCount > 0) {
+            entityManager.refresh(document);
+        }
     }
 }

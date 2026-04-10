@@ -17,7 +17,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     Page<Document> findByCategoryIdOrderByCreatedAtDesc(Long categoryId, Pageable pageable);
 
     // 조회수 원자 증가 쿼리
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query("""
             update Document d
             set d.viewCount = d.viewCount + 1

@@ -11,6 +11,7 @@ import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.entity.UserRole;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import com.jinju.jinjuwiki.global.config.JpaAuditingConfig;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,16 +28,19 @@ class DocumentRepositoryTest {
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final EntityManager entityManager;
 
     @Autowired
     DocumentRepositoryTest(
             DocumentRepository documentRepository,
             UserRepository userRepository,
-            CategoryRepository categoryRepository
+            CategoryRepository categoryRepository,
+            EntityManager entityManager
     ) {
         this.documentRepository = documentRepository;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
+        this.entityManager = entityManager;
     }
 
     @Test
@@ -51,6 +55,7 @@ class DocumentRepositoryTest {
         int updatedCount = documentRepository.incrementViewCount(savedDocument.getId());
 
         // then
+        entityManager.clear();
         Document reloadedDocument = documentRepository.findById(savedDocument.getId()).orElseThrow();
         assertThat(updatedCount).isEqualTo(1);
         assertThat(reloadedDocument.getViewCount()).isEqualTo(1L);
