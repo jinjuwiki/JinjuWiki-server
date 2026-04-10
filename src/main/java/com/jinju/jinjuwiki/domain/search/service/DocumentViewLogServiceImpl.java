@@ -7,6 +7,7 @@ import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import com.jinju.jinjuwiki.global.error.BusinessException;
 import com.jinju.jinjuwiki.global.error.ErrorCode;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,12 +17,18 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DocumentViewLogServiceImpl implements DocumentViewLogService {
 
+    private static final long USER_VIEW_LIMIT_PER_HOUR = 3L;
+
     private final DocumentViewLogRepository documentViewLogRepository;
     private final UserRepository userRepository;
 
     @Override
     @Transactional
     public void save(Document document, Long viewerUserId, String viewerIp) {
+        if (hasExceededUserViewLimit(document, viewerUserId)) {
+            return;
+        }
+
         User viewer = resolveViewer(viewerUserId);
 
         documentViewLogRepository.save(DocumentViewLog.builder()
@@ -39,5 +46,20 @@ public class DocumentViewLogServiceImpl implements DocumentViewLogService {
 
         return userRepository.findById(viewerUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    // 로그인 사용자 조회 제한 확인 메서드
+    private boolean hasExceededUserViewLimit(Document document, Long viewerUserId) {
+        if (viewerUserId == null) {
+            return false;
+        }
+
+        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
+        long viewCount = documentViewLogRepository.countByDocumentIdAndUserIdAndCreatedAtAfter(
+                document.getId(),
+                viewerUserId,
+                oneHourAgo
+        );
+        return viewCount >= USER_VIEW_LIMIT_PER_HOUR;
     }
 }
