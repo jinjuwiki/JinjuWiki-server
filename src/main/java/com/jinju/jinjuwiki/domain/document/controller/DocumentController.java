@@ -65,7 +65,7 @@ public class DocumentController {
             HttpServletRequest request
     ) {
         Long viewerUserId = userPrincipal == null ? null : userPrincipal.getId();
-        Document document = documentService.getDocument(id, viewerUserId, request.getRemoteAddr());
+        Document document = documentService.getDocument(id, viewerUserId, extractViewerIp(request));
         DocumentDetailResponse response = DocumentDetailResponseMapper.toResponse(document);
         return ResponseEntity.ok(ApiResponse.of(response));
     }
@@ -125,5 +125,15 @@ public class DocumentController {
     ) {
         documentService.deleteDocument(id, userPrincipal.getId());
         return ResponseEntity.ok(ApiResponse.success("문서가 삭제되었습니다."));
+    }
+
+    // 조회 사용자 IP 추출 메서드
+    private String extractViewerIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+
+        return request.getRemoteAddr();
     }
 }

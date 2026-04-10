@@ -124,5 +124,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     // 비로그인 사용자 조회 처리 메서드
     private void recordAnonymousDocumentView(Document document, String viewerIp) {
+        if (viewerIp == null || viewerIp.isBlank()) {
+            return;
+        }
     }
 }
