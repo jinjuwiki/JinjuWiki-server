@@ -1,19 +1,14 @@
 package com.jinju.jinjuwiki.domain.search.service;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.jinju.jinjuwiki.domain.category.entity.Category;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
-import com.jinju.jinjuwiki.domain.search.entity.DocumentViewLog;
-import com.jinju.jinjuwiki.domain.search.repository.DocumentViewLogRepository;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.entity.UserRole;
-import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,12 +20,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 // 문서 조회 로그 서비스 단위 테스트 클래스
 @ExtendWith(MockitoExtension.class)
 class DocumentViewLogServiceTest {
-
-    @Mock
-    private DocumentViewLogRepository documentViewLogRepository;
-
-    @Mock
-    private UserRepository userRepository;
 
     @Mock
     private RedisDocumentViewLimiter redisDocumentViewLimiter;
@@ -46,15 +35,12 @@ class DocumentViewLogServiceTest {
     void saveUserViewLogSuccess() {
         // given
         Document document = createDocument(1L, "급상승 문서");
-        User user = createUser(2L, "viewer@test.com", "viewer");
-        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
         when(redisDocumentViewLimiter.isAllowed(1L, 2L, null)).thenReturn(true);
 
         // when
         documentViewLogService.save(document, 2L, null);
 
         // then
-        verify(documentViewLogRepository).save(any(DocumentViewLog.class));
         verify(redisDocumentViewLimiter).isAllowed(1L, 2L, null);
         verify(redisTrendingDocumentViewBuffer).incrementCurrentHourScore(1L);
     }
@@ -70,9 +56,8 @@ class DocumentViewLogServiceTest {
         documentViewLogService.save(document, 2L, null);
 
         // then
-        verify(documentViewLogRepository, never()).save(any(DocumentViewLog.class));
-        verify(userRepository, never()).findById(any());
         verify(redisDocumentViewLimiter).isAllowed(1L, 2L, null);
+        verify(redisTrendingDocumentViewBuffer, never()).incrementCurrentHourScore(any());
     }
 
     @Test
@@ -86,8 +71,8 @@ class DocumentViewLogServiceTest {
         documentViewLogService.save(document, null, "127.0.0.1");
 
         // then
-        verify(documentViewLogRepository, never()).save(any(DocumentViewLog.class));
         verify(redisDocumentViewLimiter).isAllowed(1L, null, "127.0.0.1");
+        verify(redisTrendingDocumentViewBuffer, never()).incrementCurrentHourScore(any());
     }
 
     @Test
@@ -101,7 +86,6 @@ class DocumentViewLogServiceTest {
         documentViewLogService.save(document, null, "127.0.0.1");
 
         // then
-        verify(documentViewLogRepository).save(any(DocumentViewLog.class));
         verify(redisDocumentViewLimiter).isAllowed(1L, null, "127.0.0.1");
         verify(redisTrendingDocumentViewBuffer).incrementCurrentHourScore(1L);
     }
@@ -111,16 +95,12 @@ class DocumentViewLogServiceTest {
     void saveViewLogSuccessWhenRedisLimiterFails() {
         // given
         Document document = createDocument(1L, "급상승 문서");
-        User user = createUser(2L, "viewer@test.com", "viewer");
-        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
         when(redisDocumentViewLimiter.isAllowed(1L, 2L, null)).thenThrow(new RuntimeException("redis unavailable"));
 
         // when
         documentViewLogService.save(document, 2L, null);
 
         // then
-        verify(documentViewLogRepository).save(any(DocumentViewLog.class));
-        verify(userRepository).findById(2L);
         verify(redisDocumentViewLimiter).isAllowed(1L, 2L, null);
         verify(redisTrendingDocumentViewBuffer).incrementCurrentHourScore(1L);
     }

@@ -1,12 +1,6 @@
 package com.jinju.jinjuwiki.domain.search.service;
 
 import com.jinju.jinjuwiki.domain.document.entity.Document;
-import com.jinju.jinjuwiki.domain.search.entity.DocumentViewLog;
-import com.jinju.jinjuwiki.domain.search.repository.DocumentViewLogRepository;
-import com.jinju.jinjuwiki.domain.user.entity.User;
-import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
-import com.jinju.jinjuwiki.global.error.BusinessException;
-import com.jinju.jinjuwiki.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,8 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DocumentViewLogServiceImpl implements DocumentViewLogService {
 
-    private final DocumentViewLogRepository documentViewLogRepository;
-    private final UserRepository userRepository;
     private final RedisDocumentViewLimiter redisDocumentViewLimiter;
     private final RedisTrendingDocumentViewBuffer redisTrendingDocumentViewBuffer;
 
@@ -28,13 +20,7 @@ public class DocumentViewLogServiceImpl implements DocumentViewLogService {
             return false;
         }
 
-        User viewer = resolveViewer(viewerUserId);
-
-        documentViewLogRepository.save(DocumentViewLog.builder()
-                .document(document)
-                .user(viewer)
-                .viewerIp(viewerIp)
-                .build());
+        // 급상승 집계 Redis 반영 호출
         redisTrendingDocumentViewBuffer.incrementCurrentHourScore(document.getId());
         return true;
     }
@@ -51,16 +37,6 @@ public class DocumentViewLogServiceImpl implements DocumentViewLogService {
             // Redis 장애 시 문서 조회 API 보호용 fail-open 정책
             return true;
         }
-    }
-
-    // 로그인 사용자 조회자 조회 메서드
-    private User resolveViewer(Long viewerUserId) {
-        if (viewerUserId == null) {
-            return null;
-        }
-
-        return userRepository.findById(viewerUserId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
     // 비로그인 조회 IP 공백 여부 확인 메서드
