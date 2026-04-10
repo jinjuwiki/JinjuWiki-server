@@ -32,6 +32,9 @@ class DocumentViewLogServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private RedisDocumentViewLimiter redisDocumentViewLimiter;
+
     @InjectMocks
     private DocumentViewLogServiceImpl documentViewLogService;
 
@@ -42,14 +45,14 @@ class DocumentViewLogServiceTest {
         Document document = createDocument(1L, "급상승 문서");
         User user = createUser(2L, "viewer@test.com", "viewer");
         when(userRepository.findById(2L)).thenReturn(Optional.of(user));
-        when(documentViewLogRepository.countByDocumentIdAndUserIdAndCreatedAtAfter(eq(1L), eq(2L), any()))
-                .thenReturn(0L);
+        when(redisDocumentViewLimiter.isAllowed(1L, 2L, null)).thenReturn(true);
 
         // when
         documentViewLogService.save(document, 2L, null);
 
         // then
         verify(documentViewLogRepository).save(any(DocumentViewLog.class));
+        verify(redisDocumentViewLimiter).isAllowed(1L, 2L, null);
     }
 
     @Test
@@ -57,8 +60,7 @@ class DocumentViewLogServiceTest {
     void saveUserViewLogSkipWhenUserLimitExceeded() {
         // given
         Document document = createDocument(1L, "급상승 문서");
-        when(documentViewLogRepository.countByDocumentIdAndUserIdAndCreatedAtAfter(eq(1L), eq(2L), any()))
-                .thenReturn(3L);
+        when(redisDocumentViewLimiter.isAllowed(1L, 2L, null)).thenReturn(false);
 
         // when
         documentViewLogService.save(document, 2L, null);
@@ -66,6 +68,7 @@ class DocumentViewLogServiceTest {
         // then
         verify(documentViewLogRepository, never()).save(any(DocumentViewLog.class));
         verify(userRepository, never()).findById(any());
+        verify(redisDocumentViewLimiter).isAllowed(1L, 2L, null);
     }
 
     @Test
@@ -73,14 +76,14 @@ class DocumentViewLogServiceTest {
     void saveAnonymousViewLogSkipWhenIpLimitExceeded() {
         // given
         Document document = createDocument(1L, "급상승 문서");
-        when(documentViewLogRepository.countByDocumentIdAndViewerIpAndCreatedAtAfter(eq(1L), eq("127.0.0.1"), any()))
-                .thenReturn(3L);
+        when(redisDocumentViewLimiter.isAllowed(1L, null, "127.0.0.1")).thenReturn(false);
 
         // when
         documentViewLogService.save(document, null, "127.0.0.1");
 
         // then
         verify(documentViewLogRepository, never()).save(any(DocumentViewLog.class));
+        verify(redisDocumentViewLimiter).isAllowed(1L, null, "127.0.0.1");
     }
 
     @Test
@@ -88,14 +91,14 @@ class DocumentViewLogServiceTest {
     void saveAnonymousViewLogSuccess() {
         // given
         Document document = createDocument(1L, "급상승 문서");
-        when(documentViewLogRepository.countByDocumentIdAndViewerIpAndCreatedAtAfter(eq(1L), eq("127.0.0.1"), any()))
-                .thenReturn(2L);
+        when(redisDocumentViewLimiter.isAllowed(1L, null, "127.0.0.1")).thenReturn(true);
 
         // when
         documentViewLogService.save(document, null, "127.0.0.1");
 
         // then
         verify(documentViewLogRepository).save(any(DocumentViewLog.class));
+        verify(redisDocumentViewLimiter).isAllowed(1L, null, "127.0.0.1");
     }
 
     // 테스트용 사용자 생성 메서드
