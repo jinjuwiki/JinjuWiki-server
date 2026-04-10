@@ -4,6 +4,7 @@ import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import java.time.Duration;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 // 문서 조회수 Redis 누적값 DB 반영 서비스 클래스
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class DocumentViewCountFlushService {
 
@@ -27,6 +29,7 @@ public class DocumentViewCountFlushService {
     @Transactional
     public int flushPendingViewCounts() {
         if (!tryAcquireFlushLock()) {
+            log.debug("문서 조회수 flush 스킵, flush lock 미획득");
             return 0;
         }
 
@@ -42,7 +45,13 @@ public class DocumentViewCountFlushService {
                 if (documentRepository.incrementViewCountBy(documentId, delta) > 0) {
                     hashOperations.delete(VIEW_COUNT_PROCESSING_KEY, pendingEntry.getKey().toString());
                     flushedCount++;
+                } else {
+                    log.warn("문서 조회수 flush 반영 실패, documentId={}, delta={}", documentId, delta);
                 }
+            }
+
+            if (flushedCount > 0) {
+                log.info("문서 조회수 flush 완료, flushedCount={}", flushedCount);
             }
 
             return flushedCount;
@@ -66,6 +75,7 @@ public class DocumentViewCountFlushService {
         if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(VIEW_COUNT_PROCESSING_KEY))) {
             Map<Object, Object> processingEntries = hashOperations.entries(VIEW_COUNT_PROCESSING_KEY);
             if (!processingEntries.isEmpty()) {
+                log.warn("문서 조회수 flush 재개, processingCount={}", processingEntries.size());
                 return processingEntries;
             }
 
@@ -77,7 +87,11 @@ public class DocumentViewCountFlushService {
         }
 
         stringRedisTemplate.rename(VIEW_COUNT_BUFFER_KEY, VIEW_COUNT_PROCESSING_KEY);
-        return hashOperations.entries(VIEW_COUNT_PROCESSING_KEY);
+        Map<Object, Object> processingEntries = hashOperations.entries(VIEW_COUNT_PROCESSING_KEY);
+        if (!processingEntries.isEmpty()) {
+            log.debug("문서 조회수 flush drain 완료, processingCount={}", processingEntries.size());
+        }
+        return processingEntries;
     }
 
     // flush 분산 락 획득 메서드
