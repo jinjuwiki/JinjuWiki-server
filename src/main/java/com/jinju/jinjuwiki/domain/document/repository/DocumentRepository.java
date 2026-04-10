@@ -25,6 +25,15 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             """)
     int incrementViewCount(@Param("documentId") Long documentId);
 
+    // 조회수 delta 원자 증가 쿼리
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            update Document d
+            set d.viewCount = d.viewCount + :delta
+            where d.id = :documentId
+            """)
+    int incrementViewCountBy(@Param("documentId") Long documentId, @Param("delta") long delta);
+
     // concat() : 두개 이상의 컬럼이나 문자열을 순서대로 묶어 하나의 문자열로 반환
     @Query("""
             select d

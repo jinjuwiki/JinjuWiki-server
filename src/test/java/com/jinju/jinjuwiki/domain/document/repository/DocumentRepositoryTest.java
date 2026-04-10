@@ -61,6 +61,24 @@ class DocumentRepositoryTest {
         assertThat(reloadedDocument.getViewCount()).isEqualTo(1L);
     }
 
+    @Test
+    @DisplayName("문서 조회수 delta 증가 쿼리는 전달한 값만큼 DB 조회수를 증가시킨다.")
+    void incrementViewCountByUpdatesDatabaseValueWithDelta() {
+        // 테스트용 작성자와 카테고리 준비 메서드 호출
+        User author = userRepository.save(createDeltaUser());
+        Category category = categoryRepository.save(createDeltaCategory());
+        Document savedDocument = documentRepository.saveAndFlush(createDeltaDocument(author, category));
+
+        // when
+        int updatedCount = documentRepository.incrementViewCountBy(savedDocument.getId(), 5L);
+
+        // then
+        entityManager.clear();
+        Document reloadedDocument = documentRepository.findById(savedDocument.getId()).orElseThrow();
+        assertThat(updatedCount).isEqualTo(1);
+        assertThat(reloadedDocument.getViewCount()).isEqualTo(5L);
+    }
+
     // 테스트용 사용자 생성 메서드
     private User createUser() {
         return User.builder()
@@ -78,6 +96,13 @@ class DocumentRepositoryTest {
                 .build();
     }
 
+    // delta 테스트용 카테고리 생성 메서드
+    private Category createDeltaCategory() {
+        return Category.builder()
+                .name("조회수-delta")
+                .build();
+    }
+
     // 테스트용 문서 생성 메서드
     private Document createDocument(User author, Category category) {
         ObjectNode contentJson = OBJECT_MAPPER.createObjectNode();
@@ -88,6 +113,33 @@ class DocumentRepositoryTest {
                 .title("조회수 테스트 문서")
                 .content(contentJson.toString())
                 .summary("조회수 테스트 요약")
+                .eventYear(2026)
+                .contentJson(contentJson.toString())
+                .author(author)
+                .category(category)
+                .build();
+    }
+
+    // delta 테스트용 사용자 생성 메서드
+    private User createDeltaUser() {
+        return User.builder()
+                .email("view-count-delta@test.com")
+                .password("encoded-password")
+                .nickname("viewCounterDelta")
+                .role(UserRole.USER)
+                .build();
+    }
+
+    // delta 테스트용 문서 생성 메서드
+    private Document createDeltaDocument(User author, Category category) {
+        ObjectNode contentJson = OBJECT_MAPPER.createObjectNode();
+        contentJson.put("type", "doc");
+        contentJson.putArray("content");
+
+        return Document.builder()
+                .title("조회수 delta 테스트 문서")
+                .content(contentJson.toString())
+                .summary("조회수 delta 테스트 요약")
                 .eventYear(2026)
                 .contentJson(contentJson.toString())
                 .author(author)
