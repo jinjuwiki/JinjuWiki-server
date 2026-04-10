@@ -13,6 +13,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+// 비밀번호 재설정 토큰 엔티티
 @Getter
 @Entity
 @Table(name = "password_reset_tokens")
@@ -39,6 +40,7 @@ public class PasswordResetToken extends BaseEntity {
         this.expiresAt = expiresAt;
     }
 
+    // 비밀번호 재설정 토큰 재발급 메서드
     public void reissue(String token, LocalDateTime expiresAt) {
         this.token = token;
         this.expiresAt = expiresAt;

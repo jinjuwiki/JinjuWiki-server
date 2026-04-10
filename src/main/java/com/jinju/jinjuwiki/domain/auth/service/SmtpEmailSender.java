@@ -11,6 +11,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
+// SMTP 기반 메일 발송 구현체
 @Component
 @RequiredArgsConstructor
 public class SmtpEmailSender implements EmailSender {
@@ -21,6 +22,7 @@ public class SmtpEmailSender implements EmailSender {
     private String from;
 
     @Override
+    // 이메일 인증코드 메일 발송 로직
     public void sendVerificationCode(String to, String code) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -38,6 +40,7 @@ public class SmtpEmailSender implements EmailSender {
     }
 
     @Override
+    // 비밀번호 재설정 메일 발송 로직
     public void sendPasswordResetLink(String to, String token) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
@@ -54,7 +57,7 @@ public class SmtpEmailSender implements EmailSender {
         }
     }
 
-    // 인증 메일을 카드형 레이아웃으로 구성해 Gmail에서도 읽기 쉽게 만듦
+    // 인증 메일 HTML 생성 메서드
     private String buildVerificationEmailHtml(String code) {
         String escapedCode = escapeHtml(code);
 
@@ -113,7 +116,7 @@ public class SmtpEmailSender implements EmailSender {
                 """.formatted(escapedCode);
     }
 
-    // 재설정 토큰 메일 본문 구성
+    // 재설정 메일 HTML 생성 메서드
     private String buildPasswordResetEmailHtml(String token) {
         String escapedToken = escapeHtml(token);
 
@@ -168,7 +171,7 @@ public class SmtpEmailSender implements EmailSender {
                 """.formatted(escapedToken);
     }
 
-    // 사용자 입력이 HTML에 그대로 들어갈 때 깨지지 않도록 최소한의 이스케이프를 적용
+    // 메일 본문 이스케이프 메서드
     private String escapeHtml(String value) {
         return value
                 .replace("&", "&amp;")

@@ -29,7 +29,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// 로그인/회원가입 로직 처리 클래스
+// 인증 로직 처리 서비스
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -53,6 +53,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
+    // 이메일 인증코드 발송 로직
     public EmailVerificationSendResponse sendVerificationCode(EmailVerificationSendRequest request) {
         authValidationService.validateEmailAvailable(request.email());
 
@@ -77,6 +78,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
+    // 이메일 인증코드 검증 로직
     public EmailVerificationVerifyResponse verifyCode(EmailVerificationVerifyRequest request) {
         EmailVerification verification = emailVerificationRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BusinessException(ErrorCode.EMAIL_VERIFICATION_NOT_FOUND));
@@ -96,6 +98,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
+    // 회원가입 로직
     public SignupResponse signup(SignupRequest request) {
         authValidationService.validateDuplicateSignup(request.email(), request.nickname());
         authValidationService.validateEmailVerified(request.email());
@@ -114,6 +117,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    // 로그인 로직
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_LOGIN));
@@ -137,6 +141,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
+    // 비밀번호 재설정 요청 로직
     public void requestPasswordReset(PasswordResetRequest request) {
         userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -158,10 +163,12 @@ public class AuthServiceImpl implements AuthService {
         emailSender.sendPasswordResetLink(request.email(), token);
     }
 
+    // 이메일 인증코드 생성 메서드
     private String generateVerificationCode() {
         return String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
     }
 
+    // 비밀번호 재설정 토큰 생성 메서드
     private String generatePasswordResetToken() {
         return java.util.UUID.randomUUID().toString();
     }
