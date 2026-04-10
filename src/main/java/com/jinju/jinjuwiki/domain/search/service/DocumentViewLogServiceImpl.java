@@ -19,6 +19,7 @@ public class DocumentViewLogServiceImpl implements DocumentViewLogService {
     private final DocumentViewLogRepository documentViewLogRepository;
     private final UserRepository userRepository;
     private final RedisDocumentViewLimiter redisDocumentViewLimiter;
+    private final RedisTrendingDocumentViewBuffer redisTrendingDocumentViewBuffer;
 
     @Override
     @Transactional
@@ -34,6 +35,7 @@ public class DocumentViewLogServiceImpl implements DocumentViewLogService {
                 .user(viewer)
                 .viewerIp(viewerIp)
                 .build());
+        redisTrendingDocumentViewBuffer.incrementCurrentHourScore(document.getId());
         return true;
     }
 

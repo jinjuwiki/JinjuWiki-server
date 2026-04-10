@@ -35,6 +35,9 @@ class DocumentViewLogServiceTest {
     @Mock
     private RedisDocumentViewLimiter redisDocumentViewLimiter;
 
+    @Mock
+    private RedisTrendingDocumentViewBuffer redisTrendingDocumentViewBuffer;
+
     @InjectMocks
     private DocumentViewLogServiceImpl documentViewLogService;
 
@@ -53,6 +56,7 @@ class DocumentViewLogServiceTest {
         // then
         verify(documentViewLogRepository).save(any(DocumentViewLog.class));
         verify(redisDocumentViewLimiter).isAllowed(1L, 2L, null);
+        verify(redisTrendingDocumentViewBuffer).incrementCurrentHourScore(1L);
     }
 
     @Test
@@ -99,6 +103,7 @@ class DocumentViewLogServiceTest {
         // then
         verify(documentViewLogRepository).save(any(DocumentViewLog.class));
         verify(redisDocumentViewLimiter).isAllowed(1L, null, "127.0.0.1");
+        verify(redisTrendingDocumentViewBuffer).incrementCurrentHourScore(1L);
     }
 
     @Test
@@ -117,6 +122,7 @@ class DocumentViewLogServiceTest {
         verify(documentViewLogRepository).save(any(DocumentViewLog.class));
         verify(userRepository).findById(2L);
         verify(redisDocumentViewLimiter).isAllowed(1L, 2L, null);
+        verify(redisTrendingDocumentViewBuffer).incrementCurrentHourScore(1L);
     }
 
     // 테스트용 사용자 생성 메서드
