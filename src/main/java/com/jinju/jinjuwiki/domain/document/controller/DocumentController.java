@@ -18,6 +18,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -129,11 +131,28 @@ public class DocumentController {
 
     // 조회 사용자 IP 추출 메서드
     private String extractViewerIp(HttpServletRequest request) {
+        String remoteAddr = request.getRemoteAddr();
         String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
+        if (isTrustedProxyAddress(remoteAddr) && forwardedFor != null && !forwardedFor.isBlank()) {
             return forwardedFor.split(",")[0].trim();
         }
 
-        return request.getRemoteAddr();
+        return remoteAddr;
+    }
+
+    // 프록시 신뢰 가능 IP 확인 메서드
+    private boolean isTrustedProxyAddress(String remoteAddr) {
+        if (remoteAddr == null || remoteAddr.isBlank()) {
+            return false;
+        }
+
+        try {
+            InetAddress address = InetAddress.getByName(remoteAddr);
+            return address.isLoopbackAddress()
+                    || address.isSiteLocalAddress()
+                    || address.isAnyLocalAddress();
+        } catch (UnknownHostException exception) {
+            return false;
+        }
     }
 }
