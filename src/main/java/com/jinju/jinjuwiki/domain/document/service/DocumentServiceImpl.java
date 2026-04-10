@@ -50,10 +50,11 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public Document getDocument(Long id) {
+    public Document getDocument(Long id, Long viewerUserId, String viewerIp) {
         Document document = documentDomainService.getDocument(id);
 
         document.increaseViewCount();
+        recordDocumentView(document, viewerUserId, viewerIp);
         return document;
     }
 
@@ -105,5 +106,8 @@ public class DocumentServiceImpl implements DocumentService {
         Document document = documentDomainService.getDocument(id);
         documentDomainService.validateAuthor(document, currentUserId);
         documentRepository.delete(document);
+    }
+
+    private void recordDocumentView(Document document, Long viewerUserId, String viewerIp) {
     }
 }

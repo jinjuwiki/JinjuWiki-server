@@ -16,6 +16,7 @@ import com.jinju.jinjuwiki.global.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -58,8 +59,13 @@ public class DocumentController {
 
     @GetMapping("/{id}")
     @Operation(summary = "문서 상세 조회", description = "문서 상세 정보와 내용을 조회합니다.")
-    public ResponseEntity<ApiResponse<DocumentDetailResponse>> getDocument(@PathVariable Long id) {
-        Document document = documentService.getDocument(id);
+    public ResponseEntity<ApiResponse<DocumentDetailResponse>> getDocument(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            HttpServletRequest request
+    ) {
+        Long viewerUserId = userPrincipal == null ? null : userPrincipal.getId();
+        Document document = documentService.getDocument(id, viewerUserId, request.getRemoteAddr());
         DocumentDetailResponse response = DocumentDetailResponseMapper.toResponse(document);
         return ResponseEntity.ok(ApiResponse.of(response));
     }

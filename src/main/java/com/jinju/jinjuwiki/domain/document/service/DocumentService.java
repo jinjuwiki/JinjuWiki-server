@@ -9,7 +9,7 @@ public interface DocumentService {
 
     Document createDocument(DocumentCreateRequest request, Long currentUserId);
 
-    Document getDocument(Long id);
+    Document getDocument(Long id, Long viewerUserId, String viewerIp);
 
     Page<Document> getDocuments(Long categoryId, int page, int size);
 
