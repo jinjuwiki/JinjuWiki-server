@@ -29,6 +29,10 @@ public class DocumentViewLogServiceImpl implements DocumentViewLogService {
             return;
         }
 
+        if (hasExceededIpViewLimit(document, viewerUserId, viewerIp)) {
+            return;
+        }
+
         User viewer = resolveViewer(viewerUserId);
 
         documentViewLogRepository.save(DocumentViewLog.builder()
@@ -58,6 +62,21 @@ public class DocumentViewLogServiceImpl implements DocumentViewLogService {
         long viewCount = documentViewLogRepository.countByDocumentIdAndUserIdAndCreatedAtAfter(
                 document.getId(),
                 viewerUserId,
+                oneHourAgo
+        );
+        return viewCount >= USER_VIEW_LIMIT_PER_HOUR;
+    }
+
+    // 비로그인 사용자 조회 제한 확인 메서드
+    private boolean hasExceededIpViewLimit(Document document, Long viewerUserId, String viewerIp) {
+        if (viewerUserId != null || viewerIp == null || viewerIp.isBlank()) {
+            return false;
+        }
+
+        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
+        long viewCount = documentViewLogRepository.countByDocumentIdAndViewerIpAndCreatedAtAfter(
+                document.getId(),
+                viewerIp,
                 oneHourAgo
         );
         return viewCount >= USER_VIEW_LIMIT_PER_HOUR;
