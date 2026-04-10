@@ -31,7 +31,7 @@ public interface DocumentViewLogRepository extends JpaRepository<DocumentViewLog
             from DocumentViewLog l
             where l.createdAt >= :since
             group by l.document.id
-            order by count(l.id) desc
+            order by count(l.id) desc, max(l.createdAt) desc
             """)
     List<TrendingDocumentProjection> findTrendingDocumentsSince(@Param("since") LocalDateTime since);
 }
