@@ -58,8 +58,8 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     // 이메일 인증코드 발송 로직
     public EmailVerificationSendResponse sendVerificationCode(EmailVerificationSendRequest request) {
-        // 이메일 인증 발송 요청 제한 확인 메서드
-        redisEmailVerificationSendRateLimiter.validateAllowed(request.email());
+        // 이메일 인증 발송 요청 제한 확인 호출
+        validateEmailVerificationSendAllowed(request.email());
         authValidationService.validateEmailAvailable(request.email());
 
         String code = generateVerificationCode();
@@ -85,8 +85,8 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     // 이메일 인증코드 검증 로직
     public EmailVerificationVerifyResponse verifyCode(EmailVerificationVerifyRequest request) {
-        // 이메일 인증코드 검증 시도 제한 확인 메서드
-        redisEmailVerificationVerifyAttemptLimiter.validateAllowed(request.email());
+        // 이메일 인증코드 검증 시도 제한 확인 호출
+        validateEmailVerificationVerifyAllowed(request.email());
 
         EmailVerification verification = emailVerificationRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BusinessException(ErrorCode.EMAIL_VERIFICATION_NOT_FOUND));
@@ -100,7 +100,7 @@ public class AuthServiceImpl implements AuthService {
             // 이메일 인증코드 검증 실패 누적 메서드
             long failureCount = redisEmailVerificationVerifyAttemptLimiter.recordFailure(request.email());
             if (failureCount >= 5L) {
-                throw new BusinessException(ErrorCode.INVALID_INPUT);
+                throw new BusinessException(ErrorCode.EMAIL_VERIFICATION_ATTEMPT_EXCEEDED);
             }
             throw new BusinessException(ErrorCode.EMAIL_VERIFICATION_CODE_MISMATCH);
         }
@@ -158,8 +158,8 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     // 비밀번호 재설정 요청 로직
     public void requestPasswordReset(PasswordResetRequest request) {
-        // 비밀번호 재설정 요청 제한 확인 메서드
-        redisPasswordResetRequestRateLimiter.validateAllowed(request.email());
+        // 비밀번호 재설정 요청 제한 확인 호출
+        validatePasswordResetRequestAllowed(request.email());
 
         // 사용자 열거 방지용 존재 여부 은닉 메서드
         Optional<User> user = userRepository.findByEmail(request.email());
@@ -192,5 +192,41 @@ public class AuthServiceImpl implements AuthService {
     // 비밀번호 재설정 토큰 생성 메서드
     private String generatePasswordResetToken() {
         return java.util.UUID.randomUUID().toString();
+    }
+
+    // 이메일 인증 발송 제한 예외 변환 메서드
+    private void validateEmailVerificationSendAllowed(String email) {
+        try {
+            redisEmailVerificationSendRateLimiter.validateAllowed(email);
+        } catch (BusinessException exception) {
+            if (exception.getErrorCode() == ErrorCode.INVALID_INPUT) {
+                throw new BusinessException(ErrorCode.EMAIL_VERIFICATION_SEND_RATE_LIMITED);
+            }
+            throw exception;
+        }
+    }
+
+    // 비밀번호 재설정 요청 제한 예외 변환 메서드
+    private void validatePasswordResetRequestAllowed(String email) {
+        try {
+            redisPasswordResetRequestRateLimiter.validateAllowed(email);
+        } catch (BusinessException exception) {
+            if (exception.getErrorCode() == ErrorCode.INVALID_INPUT) {
+                throw new BusinessException(ErrorCode.PASSWORD_RESET_REQUEST_RATE_LIMITED);
+            }
+            throw exception;
+        }
+    }
+
+    // 이메일 인증코드 검증 제한 예외 변환 메서드
+    private void validateEmailVerificationVerifyAllowed(String email) {
+        try {
+            redisEmailVerificationVerifyAttemptLimiter.validateAllowed(email);
+        } catch (BusinessException exception) {
+            if (exception.getErrorCode() == ErrorCode.INVALID_INPUT) {
+                throw new BusinessException(ErrorCode.EMAIL_VERIFICATION_ATTEMPT_EXCEEDED);
+            }
+            throw exception;
+        }
     }
 }

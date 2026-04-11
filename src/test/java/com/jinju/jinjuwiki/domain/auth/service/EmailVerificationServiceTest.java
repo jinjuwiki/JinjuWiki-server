@@ -151,8 +151,27 @@ class EmailVerificationServiceTest {
         );
 
         // then
-        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT);
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMAIL_VERIFICATION_ATTEMPT_EXCEEDED);
         verify(redisEmailVerificationVerifyAttemptLimiter).validateAllowed("verify@test.com");
         verify(redisEmailVerificationVerifyAttemptLimiter).recordFailure("verify@test.com");
+    }
+
+    @Test
+    @DisplayName("인증코드 검증 요청이 이미 제한 상태면 전용 에러 코드로 응답한다.")
+    void verifyCodeFailWhenVerifyAttemptAlreadyBlocked() {
+        // given
+        doThrow(new BusinessException(ErrorCode.INVALID_INPUT))
+                .when(redisEmailVerificationVerifyAttemptLimiter)
+                .validateAllowed("verify@test.com");
+
+        // when
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> authService.verifyCode(new EmailVerificationVerifyRequest("verify@test.com", "000000"))
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMAIL_VERIFICATION_ATTEMPT_EXCEEDED);
+        verify(redisEmailVerificationVerifyAttemptLimiter).validateAllowed("verify@test.com");
     }
 }
