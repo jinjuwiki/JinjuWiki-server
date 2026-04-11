@@ -41,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final EmailVerificationRepository emailVerificationRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final AuthValidationService authValidationService;
+    private final RedisEmailVerificationSendRateLimiter redisEmailVerificationSendRateLimiter;
     private final EmailSender emailSender;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -55,6 +56,8 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     // 이메일 인증코드 발송 로직
     public EmailVerificationSendResponse sendVerificationCode(EmailVerificationSendRequest request) {
+        // 이메일 인증 발송 요청 제한 확인 메서드
+        redisEmailVerificationSendRateLimiter.validateAllowed(request.email());
         authValidationService.validateEmailAvailable(request.email());
 
         String code = generateVerificationCode();
