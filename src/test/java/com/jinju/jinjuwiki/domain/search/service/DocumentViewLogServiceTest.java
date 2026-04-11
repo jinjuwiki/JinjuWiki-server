@@ -1,19 +1,14 @@
 package com.jinju.jinjuwiki.domain.search.service;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.jinju.jinjuwiki.domain.category.entity.Category;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
-import com.jinju.jinjuwiki.domain.search.entity.DocumentViewLog;
-import com.jinju.jinjuwiki.domain.search.repository.DocumentViewLogRepository;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.entity.UserRole;
-import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,10 +22,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 class DocumentViewLogServiceTest {
 
     @Mock
-    private DocumentViewLogRepository documentViewLogRepository;
+    private RedisDocumentViewLimiter redisDocumentViewLimiter;
 
     @Mock
-    private UserRepository userRepository;
+    private RedisTrendingDocumentViewBuffer redisTrendingDocumentViewBuffer;
 
     @InjectMocks
     private DocumentViewLogServiceImpl documentViewLogService;
@@ -40,16 +35,14 @@ class DocumentViewLogServiceTest {
     void saveUserViewLogSuccess() {
         // given
         Document document = createDocument(1L, "급상승 문서");
-        User user = createUser(2L, "viewer@test.com", "viewer");
-        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
-        when(documentViewLogRepository.countByDocumentIdAndUserIdAndCreatedAtAfter(eq(1L), eq(2L), any()))
-                .thenReturn(0L);
+        when(redisDocumentViewLimiter.isAllowed(1L, 2L, null)).thenReturn(true);
 
         // when
         documentViewLogService.save(document, 2L, null);
 
         // then
-        verify(documentViewLogRepository).save(any(DocumentViewLog.class));
+        verify(redisDocumentViewLimiter).isAllowed(1L, 2L, null);
+        verify(redisTrendingDocumentViewBuffer).incrementCurrentHourScore(1L);
     }
 
     @Test
@@ -57,15 +50,14 @@ class DocumentViewLogServiceTest {
     void saveUserViewLogSkipWhenUserLimitExceeded() {
         // given
         Document document = createDocument(1L, "급상승 문서");
-        when(documentViewLogRepository.countByDocumentIdAndUserIdAndCreatedAtAfter(eq(1L), eq(2L), any()))
-                .thenReturn(3L);
+        when(redisDocumentViewLimiter.isAllowed(1L, 2L, null)).thenReturn(false);
 
         // when
         documentViewLogService.save(document, 2L, null);
 
         // then
-        verify(documentViewLogRepository, never()).save(any(DocumentViewLog.class));
-        verify(userRepository, never()).findById(any());
+        verify(redisDocumentViewLimiter).isAllowed(1L, 2L, null);
+        verify(redisTrendingDocumentViewBuffer, never()).incrementCurrentHourScore(any());
     }
 
     @Test
@@ -73,14 +65,14 @@ class DocumentViewLogServiceTest {
     void saveAnonymousViewLogSkipWhenIpLimitExceeded() {
         // given
         Document document = createDocument(1L, "급상승 문서");
-        when(documentViewLogRepository.countByDocumentIdAndViewerIpAndCreatedAtAfter(eq(1L), eq("127.0.0.1"), any()))
-                .thenReturn(3L);
+        when(redisDocumentViewLimiter.isAllowed(1L, null, "127.0.0.1")).thenReturn(false);
 
         // when
         documentViewLogService.save(document, null, "127.0.0.1");
 
         // then
-        verify(documentViewLogRepository, never()).save(any(DocumentViewLog.class));
+        verify(redisDocumentViewLimiter).isAllowed(1L, null, "127.0.0.1");
+        verify(redisTrendingDocumentViewBuffer, never()).incrementCurrentHourScore(any());
     }
 
     @Test
@@ -88,14 +80,29 @@ class DocumentViewLogServiceTest {
     void saveAnonymousViewLogSuccess() {
         // given
         Document document = createDocument(1L, "급상승 문서");
-        when(documentViewLogRepository.countByDocumentIdAndViewerIpAndCreatedAtAfter(eq(1L), eq("127.0.0.1"), any()))
-                .thenReturn(2L);
+        when(redisDocumentViewLimiter.isAllowed(1L, null, "127.0.0.1")).thenReturn(true);
 
         // when
         documentViewLogService.save(document, null, "127.0.0.1");
 
         // then
-        verify(documentViewLogRepository).save(any(DocumentViewLog.class));
+        verify(redisDocumentViewLimiter).isAllowed(1L, null, "127.0.0.1");
+        verify(redisTrendingDocumentViewBuffer).incrementCurrentHourScore(1L);
+    }
+
+    @Test
+    @DisplayName("Redis limiter 장애가 발생해도 문서 조회 로그 저장은 계속 진행한다.")
+    void saveViewLogSuccessWhenRedisLimiterFails() {
+        // given
+        Document document = createDocument(1L, "급상승 문서");
+        when(redisDocumentViewLimiter.isAllowed(1L, 2L, null)).thenThrow(new RuntimeException("redis unavailable"));
+
+        // when
+        documentViewLogService.save(document, 2L, null);
+
+        // then
+        verify(redisDocumentViewLimiter).isAllowed(1L, 2L, null);
+        verify(redisTrendingDocumentViewBuffer).incrementCurrentHourScore(1L);
     }
 
     // 테스트용 사용자 생성 메서드

@@ -8,6 +8,7 @@ import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.document.support.DocumentContentJsonCodec;
 import com.jinju.jinjuwiki.domain.search.service.DocumentViewLogService;
+import com.jinju.jinjuwiki.domain.search.service.RedisDocumentViewCountBuffer;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import com.jinju.jinjuwiki.global.error.BusinessException;
@@ -28,6 +29,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final CategoryRepository categoryRepository;
     private final DocumentDomainService documentDomainService;
     private final DocumentViewLogService documentViewLogService;
+    private final RedisDocumentViewCountBuffer redisDocumentViewCountBuffer;
 
     @Override
     @Transactional
@@ -56,7 +58,7 @@ public class DocumentServiceImpl implements DocumentService {
         Document document = documentDomainService.getDocument(id);
 
         if (recordDocumentView(document, viewerUserId, viewerIp)) {
-            document.increaseViewCount();
+            bufferDocumentViewCount(document);
         }
         return document;
     }
@@ -132,5 +134,11 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         return documentViewLogService.save(document, null, viewerIp);
+    }
+
+    // 조회수 Redis 누적 반영 메서드
+    private void bufferDocumentViewCount(Document document) {
+        redisDocumentViewCountBuffer.increment(document.getId());
+        document.increaseViewCount();
     }
 }

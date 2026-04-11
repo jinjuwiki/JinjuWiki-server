@@ -19,6 +19,7 @@ import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.document.support.DocumentContentJsonCodec;
 import com.jinju.jinjuwiki.domain.search.service.DocumentViewLogService;
+import com.jinju.jinjuwiki.domain.search.service.RedisDocumentViewCountBuffer;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.entity.UserRole;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
@@ -57,6 +58,9 @@ class DocumentServiceTest {
 
     @Mock
     private DocumentViewLogService documentViewLogService;
+
+    @Mock
+    private RedisDocumentViewCountBuffer redisDocumentViewCountBuffer;
 
     @InjectMocks
     private DocumentServiceImpl documentService;
@@ -144,6 +148,7 @@ class DocumentServiceTest {
 
         when(documentDomainService.getDocument(200L)).thenReturn(document);
         when(documentViewLogService.save(document, 2L, null)).thenReturn(true);
+        when(redisDocumentViewCountBuffer.increment(200L)).thenReturn(1L);
 
         // when
         Document response = documentService.getDocument(200L, 2L, "127.0.0.1");
@@ -153,6 +158,7 @@ class DocumentServiceTest {
         assertThat(response.getViewCount()).isEqualTo(1L);
         verify(documentDomainService).getDocument(200L);
         verify(documentViewLogService).save(document, 2L, null);
+        verify(redisDocumentViewCountBuffer).increment(200L);
     }
 
     @Test

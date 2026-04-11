@@ -7,10 +7,8 @@ import com.jinju.jinjuwiki.domain.category.entity.Category;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.search.dto.response.TrendingDocumentsResponse;
-import com.jinju.jinjuwiki.domain.search.repository.DocumentViewLogRepository;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.entity.UserRole;
-import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,10 +23,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 class TrendingDocumentServiceTest {
 
     @Mock
-    private DocumentViewLogRepository documentViewLogRepository;
+    private DocumentRepository documentRepository;
 
     @Mock
-    private DocumentRepository documentRepository;
+    private RedisTrendingDocumentViewBuffer redisTrendingDocumentViewBuffer;
 
     @Mock
     private TrendingDocumentTitleFilter trendingDocumentTitleFilter;
@@ -43,14 +41,7 @@ class TrendingDocumentServiceTest {
     @DisplayName("급상승 문서는 집계 정렬 순서를 유지하고 상위 5개만 반환한다.")
     void getTrendingDocumentsSuccess() {
         // given
-        List<DocumentViewLogRepository.TrendingDocumentProjection> projections = List.of(
-                createProjection(2L, 20L, LocalDateTime.of(2026, 4, 10, 12, 0)),
-                createProjection(3L, 20L, LocalDateTime.of(2026, 4, 10, 11, 59)),
-                createProjection(1L, 15L, LocalDateTime.of(2026, 4, 10, 11, 58)),
-                createProjection(4L, 10L, LocalDateTime.of(2026, 4, 10, 11, 57)),
-                createProjection(5L, 8L, LocalDateTime.of(2026, 4, 10, 11, 56)),
-                createProjection(6L, 7L, LocalDateTime.of(2026, 4, 10, 11, 55))
-        );
+        List<Long> trendingDocumentIds = List.of(2L, 3L, 1L, 4L, 5L, 6L);
         List<Document> documents = List.of(
                 createDocument(1L, "문서 1"),
                 createDocument(2L, "문서 2"),
@@ -59,8 +50,7 @@ class TrendingDocumentServiceTest {
                 createDocument(5L, "문서 5"),
                 createDocument(6L, "문서 6")
         );
-        when(documentViewLogRepository.findTrendingDocumentsSince(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
-                .thenReturn(projections);
+        when(redisTrendingDocumentViewBuffer.findTrendingDocumentIds()).thenReturn(trendingDocumentIds);
         when(documentRepository.findAllById(List.of(2L, 3L, 1L, 4L, 5L, 6L))).thenReturn(documents);
         when(trendingDocumentCandidatePolicy.matchesDocumentState(org.mockito.ArgumentMatchers.any())).thenReturn(true);
         when(trendingDocumentTitleFilter.isExcludedTitle(org.mockito.ArgumentMatchers.anyString())).thenReturn(false);
@@ -76,30 +66,6 @@ class TrendingDocumentServiceTest {
         assertThat(response.documents().get(2).documentId()).isEqualTo(1L);
         assertThat(response.documents().get(3).documentId()).isEqualTo(4L);
         assertThat(response.documents().get(4).documentId()).isEqualTo(5L);
-    }
-
-    // 테스트용 집계 projection 생성 메서드
-    private DocumentViewLogRepository.TrendingDocumentProjection createProjection(
-            Long documentId,
-            long viewCount,
-            LocalDateTime lastViewedAt
-    ) {
-        return new DocumentViewLogRepository.TrendingDocumentProjection() {
-            @Override
-            public Long getDocumentId() {
-                return documentId;
-            }
-
-            @Override
-            public long getViewCount() {
-                return viewCount;
-            }
-
-            @Override
-            public LocalDateTime getLastViewedAt() {
-                return lastViewedAt;
-            }
-        };
     }
 
     // 테스트용 문서 생성 메서드
