@@ -5,6 +5,7 @@ import com.jinju.jinjuwiki.global.error.ErrorCode;
 import java.time.Duration;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
@@ -14,12 +15,16 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RedisEmailVerificationVerifyAttemptLimiter {
 
-    private static final long VERIFY_FAILURE_LIMIT = 5L;
-    private static final Duration VERIFY_FAILURE_WINDOW = Duration.ofMinutes(5);
     private static final String VERIFY_FAILURE_KEY_PREFIX = "auth:email-verify-failure";
     private static final DefaultRedisScript<Long> INCREMENT_WITH_TTL_SCRIPT = createIncrementWithTtlScript();
 
     private final StringRedisTemplate stringRedisTemplate;
+
+    @Value("${app.auth.email-verification-verify-attempt-limit.count:5}")
+    private long verifyFailureLimitCount;
+
+    @Value("${app.auth.email-verification-verify-attempt-limit.window-seconds:300}")
+    private long verifyFailureWindowSeconds;
 
     // 이메일 인증코드 검증 가능 여부 확인 메서드
     public void validateAllowed(String email) {
@@ -28,7 +33,7 @@ public class RedisEmailVerificationVerifyAttemptLimiter {
             return;
         }
 
-        if (Long.parseLong(failureCount) >= VERIFY_FAILURE_LIMIT) {
+        if (Long.parseLong(failureCount) >= verifyFailureLimitCount) {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
     }
@@ -38,7 +43,7 @@ public class RedisEmailVerificationVerifyAttemptLimiter {
         Long currentCount = stringRedisTemplate.execute(
                 INCREMENT_WITH_TTL_SCRIPT,
                 List.of(createRedisKey(email)),
-                String.valueOf(VERIFY_FAILURE_WINDOW.toSeconds())
+                String.valueOf(getVerifyFailureWindow().toSeconds())
         );
 
         if (currentCount == null) {
@@ -56,6 +61,11 @@ public class RedisEmailVerificationVerifyAttemptLimiter {
     // 검증 실패 Redis 키 생성 메서드
     private String createRedisKey(String email) {
         return VERIFY_FAILURE_KEY_PREFIX + ":" + email.toLowerCase();
+    }
+
+    // 이메일 인증코드 검증 실패 제한 시간 계산 메서드
+    private Duration getVerifyFailureWindow() {
+        return Duration.ofSeconds(verifyFailureWindowSeconds);
     }
 
     // TTL 포함 증가 Lua 스크립트 생성 메서드
