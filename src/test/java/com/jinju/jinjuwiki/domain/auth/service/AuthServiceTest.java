@@ -56,6 +56,9 @@ class AuthServiceTest {
     private RedisEmailVerificationSendRateLimiter redisEmailVerificationSendRateLimiter;
 
     @Mock
+    private RedisPasswordResetRequestRateLimiter redisPasswordResetRequestRateLimiter;
+
+    @Mock
     private EmailSender emailSender;
 
     @Mock
@@ -222,6 +225,7 @@ class AuthServiceTest {
         authService.requestPasswordReset(request);
 
         // then
+        verify(redisPasswordResetRequestRateLimiter).validateAllowed("reset@test.com");
         verify(userRepository).findByEmail("reset@test.com");
         verify(passwordResetTokenRepository).findByEmail("reset@test.com");
         verify(passwordResetTokenRepository).save(any(PasswordResetToken.class));
@@ -253,6 +257,7 @@ class AuthServiceTest {
 
         // then
         assertThat(token.getToken()).isNotEqualTo("old-token");
+        verify(redisPasswordResetRequestRateLimiter).validateAllowed("reset@test.com");
         verify(passwordResetTokenRepository).findByEmail("reset@test.com");
         verify(emailSender).sendPasswordResetLink("reset@test.com", token.getToken());
     }
@@ -268,9 +273,30 @@ class AuthServiceTest {
         authService.requestPasswordReset(request);
 
         // then
+        verify(redisPasswordResetRequestRateLimiter).validateAllowed("missing@test.com");
         verify(userRepository).findByEmail("missing@test.com");
         verify(passwordResetTokenRepository, org.mockito.Mockito.never()).findByEmail(any());
         verify(passwordResetTokenRepository, org.mockito.Mockito.never()).save(any());
         verify(emailSender, org.mockito.Mockito.never()).sendPasswordResetLink(any(), any());
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 요청 제한을 넘으면 예외가 발생한다.")
+    void requestPasswordResetFailWhenRateLimitExceeded() {
+        // given
+        PasswordResetRequest request = new PasswordResetRequest("reset@test.com");
+        doThrow(new BusinessException(ErrorCode.INVALID_INPUT))
+                .when(redisPasswordResetRequestRateLimiter)
+                .validateAllowed("reset@test.com");
+
+        // when
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> authService.requestPasswordReset(request)
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT);
+        verify(redisPasswordResetRequestRateLimiter).validateAllowed("reset@test.com");
     }
 }

@@ -42,6 +42,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final AuthValidationService authValidationService;
     private final RedisEmailVerificationSendRateLimiter redisEmailVerificationSendRateLimiter;
+    private final RedisPasswordResetRequestRateLimiter redisPasswordResetRequestRateLimiter;
     private final EmailSender emailSender;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -146,6 +147,9 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     // 비밀번호 재설정 요청 로직
     public void requestPasswordReset(PasswordResetRequest request) {
+        // 비밀번호 재설정 요청 제한 확인 메서드
+        redisPasswordResetRequestRateLimiter.validateAllowed(request.email());
+
         // 사용자 열거 방지용 존재 여부 은닉 메서드
         Optional<User> user = userRepository.findByEmail(request.email());
         if (user.isEmpty()) {
