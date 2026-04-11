@@ -43,6 +43,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthValidationService authValidationService;
     private final RedisEmailVerificationSendRateLimiter redisEmailVerificationSendRateLimiter;
     private final RedisPasswordResetRequestRateLimiter redisPasswordResetRequestRateLimiter;
+    private final RedisEmailVerificationVerifyAttemptLimiter redisEmailVerificationVerifyAttemptLimiter;
     private final EmailSender emailSender;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -84,6 +85,9 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     // 이메일 인증코드 검증 로직
     public EmailVerificationVerifyResponse verifyCode(EmailVerificationVerifyRequest request) {
+        // 이메일 인증코드 검증 시도 제한 확인 메서드
+        redisEmailVerificationVerifyAttemptLimiter.validateAllowed(request.email());
+
         EmailVerification verification = emailVerificationRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BusinessException(ErrorCode.EMAIL_VERIFICATION_NOT_FOUND));
 
@@ -93,10 +97,17 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!verification.matches(request.code())) {
+            // 이메일 인증코드 검증 실패 누적 메서드
+            long failureCount = redisEmailVerificationVerifyAttemptLimiter.recordFailure(request.email());
+            if (failureCount >= 5L) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT);
+            }
             throw new BusinessException(ErrorCode.EMAIL_VERIFICATION_CODE_MISMATCH);
         }
 
         verification.verify(now);
+        // 이메일 인증코드 검증 실패 기록 초기화 메서드
+        redisEmailVerificationVerifyAttemptLimiter.reset(request.email());
         return new EmailVerificationVerifyResponse(verification.getEmail(), true, verification.getVerifiedAt());
     }
 

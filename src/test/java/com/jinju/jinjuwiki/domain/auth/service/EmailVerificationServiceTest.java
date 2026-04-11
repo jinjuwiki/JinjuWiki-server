@@ -39,6 +39,15 @@ class EmailVerificationServiceTest {
     private AuthValidationService authValidationService;
 
     @Mock
+    private RedisEmailVerificationSendRateLimiter redisEmailVerificationSendRateLimiter;
+
+    @Mock
+    private RedisPasswordResetRequestRateLimiter redisPasswordResetRequestRateLimiter;
+
+    @Mock
+    private RedisEmailVerificationVerifyAttemptLimiter redisEmailVerificationVerifyAttemptLimiter;
+
+    @Mock
     private EmailSender emailSender;
 
     @Mock
@@ -90,6 +99,60 @@ class EmailVerificationServiceTest {
         assertThat(response.email()).isEqualTo("verify@test.com");
         assertThat(response.verifiedAt()).isNotNull();
         assertThat(verification.isVerified()).isTrue();
+        verify(redisEmailVerificationVerifyAttemptLimiter).validateAllowed("verify@test.com");
+        verify(redisEmailVerificationVerifyAttemptLimiter).reset("verify@test.com");
         verify(emailVerificationRepository).findByEmail("verify@test.com");
+    }
+
+    @Test
+    @DisplayName("인증코드가 틀리면 실패 횟수를 누적한다.")
+    void verifyCodeFailWhenCodeMismatch() {
+        // given
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(5);
+        EmailVerification verification = EmailVerification.builder()
+                .email("verify@test.com")
+                .code("123456")
+                .verified(false)
+                .expiresAt(expiresAt)
+                .build();
+        when(emailVerificationRepository.findByEmail("verify@test.com")).thenReturn(Optional.of(verification));
+        when(redisEmailVerificationVerifyAttemptLimiter.recordFailure("verify@test.com")).thenReturn(1L);
+
+        // when
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> authService.verifyCode(new EmailVerificationVerifyRequest("verify@test.com", "000000"))
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMAIL_VERIFICATION_CODE_MISMATCH);
+        verify(redisEmailVerificationVerifyAttemptLimiter).validateAllowed("verify@test.com");
+        verify(redisEmailVerificationVerifyAttemptLimiter).recordFailure("verify@test.com");
+    }
+
+    @Test
+    @DisplayName("인증코드 실패 횟수 제한을 넘으면 차단한다.")
+    void verifyCodeFailWhenVerifyAttemptLimitExceeded() {
+        // given
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(5);
+        EmailVerification verification = EmailVerification.builder()
+                .email("verify@test.com")
+                .code("123456")
+                .verified(false)
+                .expiresAt(expiresAt)
+                .build();
+        when(emailVerificationRepository.findByEmail("verify@test.com")).thenReturn(Optional.of(verification));
+        when(redisEmailVerificationVerifyAttemptLimiter.recordFailure("verify@test.com")).thenReturn(5L);
+
+        // when
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> authService.verifyCode(new EmailVerificationVerifyRequest("verify@test.com", "000000"))
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT);
+        verify(redisEmailVerificationVerifyAttemptLimiter).validateAllowed("verify@test.com");
+        verify(redisEmailVerificationVerifyAttemptLimiter).recordFailure("verify@test.com");
     }
 }
