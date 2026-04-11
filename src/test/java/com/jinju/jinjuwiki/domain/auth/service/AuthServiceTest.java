@@ -105,7 +105,7 @@ class AuthServiceTest {
         );
 
         // then
-        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT);
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMAIL_VERIFICATION_SEND_RATE_LIMITED);
         verify(redisEmailVerificationSendRateLimiter).validateAllowed("verify@test.com");
     }
 
@@ -296,7 +296,7 @@ class AuthServiceTest {
         );
 
         // then
-        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT);
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PASSWORD_RESET_REQUEST_RATE_LIMITED);
         verify(redisPasswordResetRequestRateLimiter).validateAllowed("reset@test.com");
     }
 }
