@@ -45,6 +45,15 @@ jwt:
 app:
   auth:
     email-verification-expiration-minutes: 5
+    email-verification-send-rate-limit:
+      count: 3
+      window-seconds: 60
+    email-verification-verify-attempt-limit:
+      count: 5
+      window-seconds: 300
+    password-reset-request-rate-limit:
+      count: 5
+      window-seconds: 300
   mail:
     from: ${MAIL_FROM:${MAIL_USERNAME:no-reply@jinjuwiki.local}}
   search:

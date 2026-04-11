@@ -7,6 +7,9 @@ import org.springframework.http.HttpStatus;
 @Getter
 public enum ErrorCode {
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "잘못된 요청입니다."),
+    EMAIL_VERIFICATION_SEND_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "EMAIL_VERIFICATION_SEND_RATE_LIMITED", "이메일 인증 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
+    PASSWORD_RESET_REQUEST_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "PASSWORD_RESET_REQUEST_RATE_LIMITED", "비밀번호 재설정 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
+    EMAIL_VERIFICATION_ATTEMPT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "EMAIL_VERIFICATION_ATTEMPT_EXCEEDED", "인증코드 검증 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요."),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "DUPLICATE_EMAIL", "이미 사용 중인 이메일입니다."),
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "DUPLICATE_NICKNAME", "이미 사용 중인 닉네임입니다."),
     EMAIL_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "EMAIL_NOT_VERIFIED", "이메일 인증이 완료되지 않았습니다."),

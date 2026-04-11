@@ -8,6 +8,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.response.EmailVerificationSendResponse;
+import com.jinju.jinjuwiki.domain.auth.entity.EmailVerification;
 import com.jinju.jinjuwiki.domain.auth.dto.request.LoginRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.SignupRequest;
@@ -50,6 +53,12 @@ class AuthServiceTest {
     private AuthValidationService authValidationService;
 
     @Mock
+    private RedisEmailVerificationSendRateLimiter redisEmailVerificationSendRateLimiter;
+
+    @Mock
+    private RedisPasswordResetRequestRateLimiter redisPasswordResetRequestRateLimiter;
+
+    @Mock
     private EmailSender emailSender;
 
     @Mock
@@ -60,6 +69,45 @@ class AuthServiceTest {
 
     @InjectMocks
     private AuthServiceImpl authService;
+
+    @Test
+    @DisplayName("이메일 인증코드 발송 요청이 오면 제한 확인 후 메일을 발송한다.")
+    void sendVerificationCodeSuccess() {
+        // given
+        EmailVerificationSendRequest request = new EmailVerificationSendRequest("verify@test.com");
+        ReflectionTestUtils.setField(authService, "emailVerificationExpirationMinutes", 5L);
+        when(emailVerificationRepository.findByEmail("verify@test.com")).thenReturn(Optional.empty());
+
+        // when
+        EmailVerificationSendResponse response = authService.sendVerificationCode(request);
+
+        // then
+        assertThat(response.email()).isEqualTo("verify@test.com");
+        verify(redisEmailVerificationSendRateLimiter).validateAllowed("verify@test.com");
+        verify(authValidationService).validateEmailAvailable("verify@test.com");
+        verify(emailVerificationRepository).save(any(EmailVerification.class));
+        verify(emailSender).sendVerificationCode(eq("verify@test.com"), any(String.class));
+    }
+
+    @Test
+    @DisplayName("이메일 인증코드 발송 제한을 넘으면 예외가 발생한다.")
+    void sendVerificationCodeFailWhenRateLimitExceeded() {
+        // given
+        EmailVerificationSendRequest request = new EmailVerificationSendRequest("verify@test.com");
+        doThrow(new BusinessException(ErrorCode.INVALID_INPUT))
+                .when(redisEmailVerificationSendRateLimiter)
+                .validateAllowed("verify@test.com");
+
+        // when
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> authService.sendVerificationCode(request)
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EMAIL_VERIFICATION_SEND_RATE_LIMITED);
+        verify(redisEmailVerificationSendRateLimiter).validateAllowed("verify@test.com");
+    }
 
     @Test
     @DisplayName("회원가입에 성공하면 사용자 기본 정보를 반환한다.")
@@ -177,6 +225,7 @@ class AuthServiceTest {
         authService.requestPasswordReset(request);
 
         // then
+        verify(redisPasswordResetRequestRateLimiter).validateAllowed("reset@test.com");
         verify(userRepository).findByEmail("reset@test.com");
         verify(passwordResetTokenRepository).findByEmail("reset@test.com");
         verify(passwordResetTokenRepository).save(any(PasswordResetToken.class));
@@ -208,16 +257,37 @@ class AuthServiceTest {
 
         // then
         assertThat(token.getToken()).isNotEqualTo("old-token");
+        verify(redisPasswordResetRequestRateLimiter).validateAllowed("reset@test.com");
         verify(passwordResetTokenRepository).findByEmail("reset@test.com");
         verify(emailSender).sendPasswordResetLink("reset@test.com", token.getToken());
     }
 
     @Test
-    @DisplayName("존재하지 않는 이메일로 재설정 요청하면 예외가 발생한다.")
-    void requestPasswordResetFailWhenUserNotFound() {
+    @DisplayName("존재하지 않는 이메일로 재설정 요청해도 조용히 종료한다.")
+    void requestPasswordResetIgnoreWhenUserNotFound() {
         // given
         PasswordResetRequest request = new PasswordResetRequest("missing@test.com");
         when(userRepository.findByEmail("missing@test.com")).thenReturn(Optional.empty());
+
+        // when
+        authService.requestPasswordReset(request);
+
+        // then
+        verify(redisPasswordResetRequestRateLimiter).validateAllowed("missing@test.com");
+        verify(userRepository).findByEmail("missing@test.com");
+        verify(passwordResetTokenRepository, org.mockito.Mockito.never()).findByEmail(any());
+        verify(passwordResetTokenRepository, org.mockito.Mockito.never()).save(any());
+        verify(emailSender, org.mockito.Mockito.never()).sendPasswordResetLink(any(), any());
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 요청 제한을 넘으면 예외가 발생한다.")
+    void requestPasswordResetFailWhenRateLimitExceeded() {
+        // given
+        PasswordResetRequest request = new PasswordResetRequest("reset@test.com");
+        doThrow(new BusinessException(ErrorCode.INVALID_INPUT))
+                .when(redisPasswordResetRequestRateLimiter)
+                .validateAllowed("reset@test.com");
 
         // when
         BusinessException exception = assertThrows(
@@ -226,6 +296,7 @@ class AuthServiceTest {
         );
 
         // then
-        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PASSWORD_RESET_REQUEST_RATE_LIMITED);
+        verify(redisPasswordResetRequestRateLimiter).validateAllowed("reset@test.com");
     }
 }
