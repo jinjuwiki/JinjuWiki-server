@@ -213,19 +213,19 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 이메일로 재설정 요청하면 예외가 발생한다.")
-    void requestPasswordResetFailWhenUserNotFound() {
+    @DisplayName("존재하지 않는 이메일로 재설정 요청해도 조용히 종료한다.")
+    void requestPasswordResetIgnoreWhenUserNotFound() {
         // given
         PasswordResetRequest request = new PasswordResetRequest("missing@test.com");
         when(userRepository.findByEmail("missing@test.com")).thenReturn(Optional.empty());
 
         // when
-        BusinessException exception = assertThrows(
-                BusinessException.class,
-                () -> authService.requestPasswordReset(request)
-        );
+        authService.requestPasswordReset(request);
 
         // then
-        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
+        verify(userRepository).findByEmail("missing@test.com");
+        verify(passwordResetTokenRepository, org.mockito.Mockito.never()).findByEmail(any());
+        verify(passwordResetTokenRepository, org.mockito.Mockito.never()).save(any());
+        verify(emailSender, org.mockito.Mockito.never()).sendPasswordResetLink(any(), any());
     }
 }

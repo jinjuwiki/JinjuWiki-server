@@ -143,8 +143,11 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     // 비밀번호 재설정 요청 로직
     public void requestPasswordReset(PasswordResetRequest request) {
-        userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        // 사용자 열거 방지용 존재 여부 은닉 메서드
+        Optional<User> user = userRepository.findByEmail(request.email());
+        if (user.isEmpty()) {
+            return;
+        }
 
         String token = generatePasswordResetToken();
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(passwordResetExpirationMinutes);
