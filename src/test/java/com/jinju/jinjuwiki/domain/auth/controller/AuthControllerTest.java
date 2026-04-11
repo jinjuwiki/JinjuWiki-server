@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
 import com.jinju.jinjuwiki.domain.auth.service.AuthService;
@@ -84,5 +85,26 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.path").value("/api/auth/password/reset/request"));
 
         verify(authService).requestPasswordReset(request);
+    }
+
+    @Test
+    @DisplayName("이메일 인증코드 검증 제한 초과 시 429와 전용 에러 코드를 반환한다.")
+    void verifyCodeRateLimited() throws Exception {
+        // given
+        EmailVerificationVerifyRequest request = new EmailVerificationVerifyRequest("verify@test.com", "123456");
+        doThrow(new BusinessException(ErrorCode.EMAIL_VERIFICATION_ATTEMPT_EXCEEDED))
+                .when(authService)
+                .verifyCode(request);
+
+        // when & then
+        mockMvc.perform(post("/api/auth/email/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("EMAIL_VERIFICATION_ATTEMPT_EXCEEDED"))
+                .andExpect(jsonPath("$.message").value("인증코드 검증 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요."))
+                .andExpect(jsonPath("$.path").value("/api/auth/email/verify"));
+
+        verify(authService).verifyCode(request);
     }
 }
