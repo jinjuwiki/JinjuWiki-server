@@ -65,8 +65,7 @@ public class DocumentController {
             HttpServletRequest request
     ) {
         Long viewerUserId = userPrincipal == null ? null : userPrincipal.getId();
-        Document document = documentService.getDocument(id, viewerUserId, extractViewerIp(request));
-        DocumentDetailResponse response = DocumentDetailResponseMapper.toResponse(document);
+        DocumentDetailResponse response = documentService.getDocument(id, viewerUserId, extractViewerIp(request));
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
