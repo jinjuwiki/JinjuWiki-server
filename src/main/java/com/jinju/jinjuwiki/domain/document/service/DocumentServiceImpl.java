@@ -74,6 +74,7 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     // 문서 목록 응답 조립 메서드
     public PageResponse<DocumentSummaryResponse> getDocuments(Long categoryId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
@@ -84,6 +85,7 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     // 문서 검색 응답 조립 메서드
     public PageResponse<DocumentSummaryResponse> searchDocuments(String keyword, Long categoryId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
