@@ -84,7 +84,8 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public Page<Document> searchDocuments(String keyword, Long categoryId, int page, int size) {
+    // 문서 검색 응답 조립 메서드
+    public PageResponse<DocumentSummaryResponse> searchDocuments(String keyword, Long categoryId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         String normalizedKeyword = keyword == null ? "" : keyword.trim();
 
@@ -92,9 +93,10 @@ public class DocumentServiceImpl implements DocumentService {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
 
-        return categoryId == null
+        Page<Document> documents = categoryId == null
                 ? documentRepository.searchByKeyword(normalizedKeyword, pageable)
                 : documentRepository.searchByCategoryAndKeyword(categoryId, normalizedKeyword, pageable);
+        return PageResponse.from(documents.map(DocumentSummaryResponseMapper::toResponse));
     }
 
     @Override
