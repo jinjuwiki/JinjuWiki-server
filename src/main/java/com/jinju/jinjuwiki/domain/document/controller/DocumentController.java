@@ -6,7 +6,6 @@ import com.jinju.jinjuwiki.domain.document.dto.response.DocumentDetailResponse;
 import com.jinju.jinjuwiki.domain.document.dto.response.DocumentSummaryResponse;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
-import com.jinju.jinjuwiki.domain.document.mapper.DocumentCreateResponseMapper;
 import com.jinju.jinjuwiki.domain.document.mapper.DocumentDetailResponseMapper;
 import com.jinju.jinjuwiki.domain.document.mapper.DocumentSummaryResponseMapper;
 import com.jinju.jinjuwiki.domain.document.service.DocumentService;
@@ -54,8 +53,7 @@ public class DocumentController {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody DocumentCreateRequest request
     ) {
-        Document document = documentService.createDocument(request, userPrincipal.getId());
-        DocumentCreateResponse response = DocumentCreateResponseMapper.toResponse(document);
+        DocumentCreateResponse response = documentService.createDocument(request, userPrincipal.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of("문서가 생성되었습니다.", response));
     }
 

@@ -4,7 +4,9 @@ import com.jinju.jinjuwiki.domain.category.entity.Category;
 import com.jinju.jinjuwiki.domain.category.repository.CategoryRepository;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentCreateRequest;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
+import com.jinju.jinjuwiki.domain.document.dto.response.DocumentCreateResponse;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
+import com.jinju.jinjuwiki.domain.document.mapper.DocumentCreateResponseMapper;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.document.support.DocumentContentJsonCodec;
 import com.jinju.jinjuwiki.domain.search.service.DocumentViewLogService;
@@ -33,7 +35,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public Document createDocument(DocumentCreateRequest request, Long currentUserId) {
+    // 문서 생성 응답 조립 메서드
+    public DocumentCreateResponse createDocument(DocumentCreateRequest request, Long currentUserId) {
         User author = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         Category category = categoryRepository.findById(request.categoryId())
@@ -49,7 +52,8 @@ public class DocumentServiceImpl implements DocumentService {
                 .category(category)
                 .build();
 
-        return documentRepository.save(document);
+        Document savedDocument = documentRepository.save(document);
+        return DocumentCreateResponseMapper.toResponse(savedDocument);
     }
 
     @Override
