@@ -6,9 +6,11 @@ import com.jinju.jinjuwiki.domain.document.dto.request.DocumentCreateRequest;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.dto.response.DocumentCreateResponse;
 import com.jinju.jinjuwiki.domain.document.dto.response.DocumentDetailResponse;
+import com.jinju.jinjuwiki.domain.document.dto.response.DocumentSummaryResponse;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.document.mapper.DocumentCreateResponseMapper;
 import com.jinju.jinjuwiki.domain.document.mapper.DocumentDetailResponseMapper;
+import com.jinju.jinjuwiki.domain.document.mapper.DocumentSummaryResponseMapper;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.document.support.DocumentContentJsonCodec;
 import com.jinju.jinjuwiki.domain.search.service.DocumentViewLogService;
@@ -17,6 +19,7 @@ import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import com.jinju.jinjuwiki.global.error.BusinessException;
 import com.jinju.jinjuwiki.global.error.ErrorCode;
+import com.jinju.jinjuwiki.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -71,11 +74,13 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public Page<Document> getDocuments(Long categoryId, int page, int size) {
+    // 문서 목록 응답 조립 메서드
+    public PageResponse<DocumentSummaryResponse> getDocuments(Long categoryId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return categoryId == null
+        Page<Document> documents = categoryId == null
                 ? documentRepository.findAllByOrderByCreatedAtDesc(pageable)
                 : documentRepository.findByCategoryIdOrderByCreatedAtDesc(categoryId, pageable);
+        return PageResponse.from(documents.map(DocumentSummaryResponseMapper::toResponse));
     }
 
     @Override

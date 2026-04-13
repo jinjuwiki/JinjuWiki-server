@@ -76,9 +76,7 @@ public class DocumentController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<Document> documents = documentService.getDocuments(categoryId, page, size);
-        PageResponse<DocumentSummaryResponse> response =
-                PageResponse.from(documents.map(DocumentSummaryResponseMapper::toResponse));
+        PageResponse<DocumentSummaryResponse> response = documentService.getDocuments(categoryId, page, size);
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
