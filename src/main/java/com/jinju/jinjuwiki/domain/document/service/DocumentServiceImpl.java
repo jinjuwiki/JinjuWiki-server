@@ -94,7 +94,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public Document updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId) {
+    // 문서 수정 응답 조립 메서드
+    public DocumentDetailResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId) {
         Document document = documentDomainService.getDocument(id);
         documentDomainService.validateAuthor(document, currentUserId);
 
@@ -109,7 +110,7 @@ public class DocumentServiceImpl implements DocumentService {
                 DocumentContentJsonCodec.writeValue(request.contentJson()),
                 category
         );
-        return document;
+        return DocumentDetailResponseMapper.toResponse(document);
     }
 
     @Override

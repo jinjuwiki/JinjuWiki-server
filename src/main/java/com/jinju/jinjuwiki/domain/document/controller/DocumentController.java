@@ -107,8 +107,7 @@ public class DocumentController {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody DocumentUpdateRequest request
     ) {
-        Document document = documentService.updateDocument(id, request, userPrincipal.getId());
-        DocumentDetailResponse response = DocumentDetailResponseMapper.toResponse(document);
+        DocumentDetailResponse response = documentService.updateDocument(id, request, userPrincipal.getId());
         return ResponseEntity.ok(ApiResponse.of("문서가 수정되었습니다.", response));
     }
 

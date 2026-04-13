@@ -17,7 +17,7 @@ public interface DocumentService {
 
     Page<Document> searchDocuments(String keyword, Long categoryId, int page, int size);
 
-    Document updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId);
+    DocumentDetailResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId);
 
     void deleteDocument(Long id, Long currentUserId);
 }
