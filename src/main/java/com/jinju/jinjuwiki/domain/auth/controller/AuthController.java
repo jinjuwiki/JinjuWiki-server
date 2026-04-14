@@ -40,6 +40,29 @@ public class AuthController {
 
     @PostMapping("/email/send")
     @Operation(summary = "이메일 인증코드 발송", description = "회원가입 전 이메일 인증코드를 발송합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "인증코드 발송 성공",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 이메일 형식 등 요청 본문 오류",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "429",
+                    description = "이메일 인증 요청 횟수 초과",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "인증 메일 발송 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    // 이메일 인증코드 발송 응답 코드 명세
     // 이메일 인증코드 발송 엔드포인트
     public ResponseEntity<ApiResponse<EmailVerificationSendResponse>> sendVerificationCode(
             @Valid @RequestBody EmailVerificationSendRequest request
