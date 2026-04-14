@@ -1,6 +1,7 @@
 package com.jinju.jinjuwiki.domain.auth.service;
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetConfirmRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.LoginRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.LoginResponse;
@@ -214,6 +215,13 @@ public class AuthServiceImpl implements AuthService {
                 passwordResetToken.getVerifiedAt(),
                 passwordResetToken.getResetTokenExpiresAt()
         );
+    }
+
+    @Override
+    @Transactional
+    // 비밀번호 재설정 완료 로직
+    public void confirmPasswordReset(PasswordResetConfirmRequest request) {
+        throw new UnsupportedOperationException("Password reset confirm not implemented yet");
     }
 
     // 이메일 인증코드 생성 메서드

@@ -1,6 +1,7 @@
 package com.jinju.jinjuwiki.domain.auth.service;
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetConfirmRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.LoginRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.LoginResponse;
@@ -32,4 +33,7 @@ public interface AuthService {
 
     // 비밀번호 재설정 인증코드 확인 메서드
     PasswordResetVerifyResponse verifyPasswordResetCode(PasswordResetVerifyRequest request);
+
+    // 비밀번호 재설정 완료 메서드
+    void confirmPasswordReset(PasswordResetConfirmRequest request);
 }
