@@ -81,6 +81,24 @@ public class DocumentController {
 
     @GetMapping("/{id}")
     @Operation(summary = "문서 상세 조회", description = "문서 상세 정보와 내용을 조회합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "문서 상세 조회 성공",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "문서를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "문서 상세 조회 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    // 문서 상세 조회 응답 코드 명세
     public ResponseEntity<ApiResponse<DocumentDetailResponse>> getDocument(
             @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal userPrincipal,
