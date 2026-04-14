@@ -1,12 +1,14 @@
 package com.jinju.jinjuwiki.domain.auth.service;
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.LoginRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.LoginResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.EmailVerificationSendResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.EmailVerificationVerifyResponse;
+import com.jinju.jinjuwiki.domain.auth.dto.response.PasswordResetVerifyResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.request.SignupRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.SignupResponse;
 import com.jinju.jinjuwiki.domain.auth.entity.EmailVerification;
@@ -182,6 +184,13 @@ public class AuthServiceImpl implements AuthService {
         }
 
         emailSender.sendPasswordResetCode(request.email(), code);
+    }
+
+    @Override
+    @Transactional
+    // 비밀번호 재설정 인증코드 확인 로직
+    public PasswordResetVerifyResponse verifyPasswordResetCode(PasswordResetVerifyRequest request) {
+        throw new UnsupportedOperationException("Password reset verify not implemented yet");
     }
 
     // 이메일 인증코드 생성 메서드
