@@ -225,6 +225,10 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_RESET_TOKEN));
 
         LocalDateTime now = LocalDateTime.now();
+        if (passwordResetToken.getVerifiedAt() == null) {
+            throw new BusinessException(ErrorCode.PASSWORD_RESET_NOT_VERIFIED);
+        }
+
         if (passwordResetToken.getResetTokenExpiresAt() == null || passwordResetToken.getResetTokenExpiresAt().isBefore(now)) {
             throw new BusinessException(ErrorCode.RESET_TOKEN_EXPIRED);
         }
@@ -237,6 +241,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         user.updatePassword(passwordEncoder.encode(request.newPassword()));
+        passwordResetToken.clearResetToken();
     }
 
     // 이메일 인증코드 생성 메서드

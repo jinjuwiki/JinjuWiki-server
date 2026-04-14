@@ -68,4 +68,11 @@ public class PasswordResetToken extends BaseEntity {
         this.verifiedAt = verifiedAt;
         this.resetTokenExpiresAt = resetTokenExpiresAt;
     }
+
+    // 비밀번호 재설정 토큰 사용 완료 처리 메서드
+    public void clearResetToken() {
+        this.resetToken = null;
+        this.verifiedAt = null;
+        this.resetTokenExpiresAt = null;
+    }
 }
