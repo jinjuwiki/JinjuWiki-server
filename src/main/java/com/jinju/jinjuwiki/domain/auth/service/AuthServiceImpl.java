@@ -167,21 +167,21 @@ public class AuthServiceImpl implements AuthService {
             return;
         }
 
-        String token = generatePasswordResetToken();
+        String code = generatePasswordResetCode();
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(passwordResetExpirationMinutes);
 
         Optional<PasswordResetToken> existing = passwordResetTokenRepository.findByEmail(request.email());
         if (existing.isPresent()) {
-            existing.get().reissue(token, expiresAt);
+            existing.get().reissue(code, expiresAt);
         } else {
             passwordResetTokenRepository.save(PasswordResetToken.builder()
                     .email(request.email())
-                    .token(token)
+                    .token(code)
                     .expiresAt(expiresAt)
                     .build());
         }
 
-        emailSender.sendPasswordResetLink(request.email(), token);
+        emailSender.sendPasswordResetCode(request.email(), code);
     }
 
     // 이메일 인증코드 생성 메서드
@@ -189,9 +189,9 @@ public class AuthServiceImpl implements AuthService {
         return String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
     }
 
-    // 비밀번호 재설정 토큰 생성 메서드
-    private String generatePasswordResetToken() {
-        return java.util.UUID.randomUUID().toString();
+    // 비밀번호 재설정 인증코드 생성 메서드
+    private String generatePasswordResetCode() {
+        return String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
     }
 
     // 이메일 인증 발송 제한 예외 변환 메서드
