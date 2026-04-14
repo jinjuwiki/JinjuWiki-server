@@ -111,6 +111,24 @@ public class DocumentController {
 
     @GetMapping
     @Operation(summary = "문서 목록 조회", description = "카테고리별 문서 목록을 페이지 단위로 조회합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "문서 목록 조회 성공",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 페이지 파라미터",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "문서 목록 조회 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    // 문서 목록 조회 응답 코드 명세
     public ResponseEntity<ApiResponse<PageResponse<DocumentSummaryResponse>>> getDocuments(
             @RequestParam(required = false) Long categoryId, // 카테고리 필터
             @RequestParam(defaultValue = "0") int page,
