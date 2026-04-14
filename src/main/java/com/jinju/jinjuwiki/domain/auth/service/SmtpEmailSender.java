@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 // SMTP 기반 메일 발송 구현체
@@ -21,6 +22,7 @@ public class SmtpEmailSender implements EmailSender {
     @Value("${app.mail.from:no-reply@jinjuwiki.local}")
     private String from;
 
+    @Async("mailExecutor")
     @Override
     // 이메일 인증코드 메일 발송 로직
     public void sendVerificationCode(String to, String code) {
