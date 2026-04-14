@@ -221,7 +221,22 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     // 비밀번호 재설정 완료 로직
     public void confirmPasswordReset(PasswordResetConfirmRequest request) {
-        throw new UnsupportedOperationException("Password reset confirm not implemented yet");
+        PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByResetToken(request.resetToken())
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_RESET_TOKEN));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (passwordResetToken.getResetTokenExpiresAt() == null || passwordResetToken.getResetTokenExpiresAt().isBefore(now)) {
+            throw new BusinessException(ErrorCode.RESET_TOKEN_EXPIRED);
+        }
+
+        User user = userRepository.findByEmail(passwordResetToken.getEmail())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (passwordEncoder.matches(request.newPassword(), user.getPassword())) {
+            throw new BusinessException(ErrorCode.SAME_AS_OLD_PASSWORD);
+        }
+
+        user.updatePassword(passwordEncoder.encode(request.newPassword()));
     }
 
     // 이메일 인증코드 생성 메서드

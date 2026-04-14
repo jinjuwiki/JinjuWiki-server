@@ -19,6 +19,8 @@ public enum ErrorCode {
     PASSWORD_RESET_NOT_FOUND(HttpStatus.NOT_FOUND, "PASSWORD_RESET_NOT_FOUND", "비밀번호 재설정 요청을 찾을 수 없습니다."),
     PASSWORD_RESET_CODE_MISMATCH(HttpStatus.BAD_REQUEST, "PASSWORD_RESET_CODE_MISMATCH", "비밀번호 재설정 인증코드가 올바르지 않습니다."),
     PASSWORD_RESET_EXPIRED(HttpStatus.BAD_REQUEST, "PASSWORD_RESET_EXPIRED", "비밀번호 재설정 인증코드가 만료되었습니다."),
+    INVALID_RESET_TOKEN(HttpStatus.NOT_FOUND, "INVALID_RESET_TOKEN", "유효하지 않은 비밀번호 재설정 토큰입니다."),
+    RESET_TOKEN_EXPIRED(HttpStatus.BAD_REQUEST, "RESET_TOKEN_EXPIRED", "비밀번호 재설정 토큰이 만료되었습니다."),
     EMAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EMAIL_SEND_FAILED", "인증 메일 발송에 실패했습니다."),
     INVALID_LOGIN(HttpStatus.UNAUTHORIZED, "INVALID_LOGIN", "이메일 또는 비밀번호가 올바르지 않습니다."),
     INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "INVALID_PASSWORD", "현재 비밀번호가 올바르지 않습니다."),

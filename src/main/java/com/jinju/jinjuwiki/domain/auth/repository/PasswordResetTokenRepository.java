@@ -9,4 +9,7 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
 
     // 이메일 기준 재설정 토큰 조회 메서드
     Optional<PasswordResetToken> findByEmail(String email);
+
+    // 재설정 토큰 기준 조회 메서드
+    Optional<PasswordResetToken> findByResetToken(String resetToken);
 }
