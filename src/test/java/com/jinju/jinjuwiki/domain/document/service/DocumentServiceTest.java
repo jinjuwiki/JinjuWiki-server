@@ -15,6 +15,7 @@ import com.jinju.jinjuwiki.domain.category.entity.Category;
 import com.jinju.jinjuwiki.domain.category.repository.CategoryRepository;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentCreateRequest;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
+import com.jinju.jinjuwiki.domain.document.dto.response.DocumentCreateResponse;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.document.support.DocumentContentJsonCodec;
@@ -94,14 +95,14 @@ class DocumentServiceTest {
         when(documentRepository.save(any(Document.class))).thenReturn(savedDocument);
 
         // when
-        Document response = documentService.createDocument(request, 1L);
+        DocumentCreateResponse response = documentService.createDocument(request, 1L);
 
         // then
-        assertThat(response.getId()).isEqualTo(100L);
-        assertThat(response.getSummary()).isEqualTo("문서 요약");
-        assertThat(response.getEventYear()).isEqualTo(2024);
-        assertThat(DocumentContentJsonCodec.readTree(response.getContentJson())).isEqualTo(contentJson);
-        assertThat(response.getAuthor().getNickname()).isEqualTo("docUser");
+        assertThat(response.documentId()).isEqualTo(100L);
+        assertThat(response.summary()).isEqualTo("문서 요약");
+        assertThat(response.eventYear()).isEqualTo(2024);
+        assertThat(response.contentJson()).isEqualTo(contentJson);
+        assertThat(response.authorNickname()).isEqualTo("docUser");
         verify(userRepository).findById(1L);
         verify(categoryRepository).findById(10L);
         verify(documentRepository).save(any(Document.class));

@@ -1,12 +1,15 @@
 package com.jinju.jinjuwiki.domain.auth.service;
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetConfirmRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.LoginRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.LoginResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.EmailVerificationSendResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.EmailVerificationVerifyResponse;
+import com.jinju.jinjuwiki.domain.auth.dto.response.PasswordResetVerifyResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.request.SignupRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.SignupResponse;
 import com.jinju.jinjuwiki.domain.auth.entity.EmailVerification;
@@ -167,25 +170,87 @@ public class AuthServiceImpl implements AuthService {
             return;
         }
 
-        String token = generatePasswordResetToken();
+        String code = generatePasswordResetCode();
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(passwordResetExpirationMinutes);
 
         Optional<PasswordResetToken> existing = passwordResetTokenRepository.findByEmail(request.email());
         if (existing.isPresent()) {
-            existing.get().reissue(token, expiresAt);
+            existing.get().reissue(code, expiresAt);
         } else {
             passwordResetTokenRepository.save(PasswordResetToken.builder()
                     .email(request.email())
-                    .token(token)
+                    .token(code)
                     .expiresAt(expiresAt)
+                    .resetToken(null)
+                    .verifiedAt(null)
+                    .resetTokenExpiresAt(null)
                     .build());
         }
 
-        emailSender.sendPasswordResetLink(request.email(), token);
+        emailSender.sendPasswordResetCode(request.email(), code);
+    }
+
+    @Override
+    @Transactional
+    // 비밀번호 재설정 인증코드 확인 로직
+    public PasswordResetVerifyResponse verifyPasswordResetCode(PasswordResetVerifyRequest request) {
+        PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByEmail(request.email())
+                .orElseThrow(() -> new BusinessException(ErrorCode.PASSWORD_RESET_NOT_FOUND));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (passwordResetToken.getExpiresAt().isBefore(now)) {
+            throw new BusinessException(ErrorCode.PASSWORD_RESET_EXPIRED);
+        }
+
+        if (!passwordResetToken.getToken().equals(request.code())) {
+            throw new BusinessException(ErrorCode.PASSWORD_RESET_CODE_MISMATCH);
+        }
+
+        String resetToken = generatePasswordResetToken();
+        LocalDateTime resetTokenExpiresAt = now.plusMinutes(passwordResetExpirationMinutes);
+        passwordResetToken.verify(resetToken, now, resetTokenExpiresAt);
+
+        return new PasswordResetVerifyResponse(
+                resetToken,
+                passwordResetToken.getVerifiedAt(),
+                passwordResetToken.getResetTokenExpiresAt()
+        );
+    }
+
+    @Override
+    @Transactional
+    // 비밀번호 재설정 완료 로직
+    public void confirmPasswordReset(PasswordResetConfirmRequest request) {
+        PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByResetToken(request.resetToken())
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_RESET_TOKEN));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (passwordResetToken.getVerifiedAt() == null) {
+            throw new BusinessException(ErrorCode.PASSWORD_RESET_NOT_VERIFIED);
+        }
+
+        if (passwordResetToken.getResetTokenExpiresAt() == null || passwordResetToken.getResetTokenExpiresAt().isBefore(now)) {
+            throw new BusinessException(ErrorCode.RESET_TOKEN_EXPIRED);
+        }
+
+        User user = userRepository.findByEmail(passwordResetToken.getEmail())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        if (passwordEncoder.matches(request.newPassword(), user.getPassword())) {
+            throw new BusinessException(ErrorCode.SAME_AS_OLD_PASSWORD);
+        }
+
+        user.updatePassword(passwordEncoder.encode(request.newPassword()));
+        passwordResetToken.clearResetToken();
     }
 
     // 이메일 인증코드 생성 메서드
     private String generateVerificationCode() {
+        return String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
+    }
+
+    // 비밀번호 재설정 인증코드 생성 메서드
+    private String generatePasswordResetCode() {
         return String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
     }
 

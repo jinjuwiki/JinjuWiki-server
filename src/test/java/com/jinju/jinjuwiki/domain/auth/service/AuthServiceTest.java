@@ -13,8 +13,11 @@ import com.jinju.jinjuwiki.domain.auth.dto.response.EmailVerificationSendRespons
 import com.jinju.jinjuwiki.domain.auth.entity.EmailVerification;
 import com.jinju.jinjuwiki.domain.auth.dto.request.LoginRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetConfirmRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.SignupRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.LoginResponse;
+import com.jinju.jinjuwiki.domain.auth.dto.response.PasswordResetVerifyResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.response.SignupResponse;
 import com.jinju.jinjuwiki.domain.auth.entity.PasswordResetToken;
 import com.jinju.jinjuwiki.domain.auth.repository.EmailVerificationRepository;
@@ -26,6 +29,7 @@ import com.jinju.jinjuwiki.global.error.BusinessException;
 import com.jinju.jinjuwiki.global.error.ErrorCode;
 import com.jinju.jinjuwiki.global.security.JwtTokenProvider;
 import com.jinju.jinjuwiki.global.security.UserPrincipal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -207,7 +211,7 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("비밀번호 재설정 요청이 오면 토큰을 저장하고 메일을 발송한다.")
+    @DisplayName("비밀번호 재설정 요청이 오면 인증코드를 저장하고 메일을 발송한다.")
     void requestPasswordResetSuccess() {
         // given
         PasswordResetRequest request = new PasswordResetRequest("reset@test.com");
@@ -229,11 +233,11 @@ class AuthServiceTest {
         verify(userRepository).findByEmail("reset@test.com");
         verify(passwordResetTokenRepository).findByEmail("reset@test.com");
         verify(passwordResetTokenRepository).save(any(PasswordResetToken.class));
-        verify(emailSender).sendPasswordResetLink(eq("reset@test.com"), any(String.class));
+        verify(emailSender).sendPasswordResetCode(eq("reset@test.com"), any(String.class));
     }
 
     @Test
-    @DisplayName("이미 발급된 재설정 토큰이 있으면 갱신한다.")
+    @DisplayName("이미 발급된 재설정 인증코드가 있으면 갱신한다.")
     void requestPasswordResetReissueSuccess() {
         // given
         PasswordResetRequest request = new PasswordResetRequest("reset@test.com");
@@ -259,7 +263,7 @@ class AuthServiceTest {
         assertThat(token.getToken()).isNotEqualTo("old-token");
         verify(redisPasswordResetRequestRateLimiter).validateAllowed("reset@test.com");
         verify(passwordResetTokenRepository).findByEmail("reset@test.com");
-        verify(emailSender).sendPasswordResetLink("reset@test.com", token.getToken());
+        verify(emailSender).sendPasswordResetCode("reset@test.com", token.getToken());
     }
 
     @Test
@@ -277,7 +281,7 @@ class AuthServiceTest {
         verify(userRepository).findByEmail("missing@test.com");
         verify(passwordResetTokenRepository, org.mockito.Mockito.never()).findByEmail(any());
         verify(passwordResetTokenRepository, org.mockito.Mockito.never()).save(any());
-        verify(emailSender, org.mockito.Mockito.never()).sendPasswordResetLink(any(), any());
+        verify(emailSender, org.mockito.Mockito.never()).sendPasswordResetCode(any(), any());
     }
 
     @Test
@@ -298,5 +302,70 @@ class AuthServiceTest {
         // then
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PASSWORD_RESET_REQUEST_RATE_LIMITED);
         verify(redisPasswordResetRequestRateLimiter).validateAllowed("reset@test.com");
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 인증코드 확인에 성공하면 reset token을 발급한다.")
+    void verifyPasswordResetCodeSuccess() {
+        // given
+        PasswordResetVerifyRequest request = new PasswordResetVerifyRequest("reset@test.com", "123456");
+        PasswordResetToken passwordResetToken = PasswordResetToken.builder()
+                .email("reset@test.com")
+                .token("123456")
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .build();
+        when(passwordResetTokenRepository.findByEmail("reset@test.com")).thenReturn(Optional.of(passwordResetToken));
+        ReflectionTestUtils.setField(authService, "passwordResetExpirationMinutes", 30L);
+
+        // when
+        PasswordResetVerifyResponse response = authService.verifyPasswordResetCode(request);
+
+        // then
+        assertThat(response.resetToken()).isNotBlank();
+        assertThat(response.resetToken()).isNotEqualTo("123456");
+        assertThat(response.verifiedAt()).isNotNull();
+        assertThat(response.expiresAt()).isNotNull();
+        assertThat(passwordResetToken.getResetToken()).isEqualTo(response.resetToken());
+        assertThat(passwordResetToken.getVerifiedAt()).isEqualTo(response.verifiedAt());
+        assertThat(passwordResetToken.getResetTokenExpiresAt()).isEqualTo(response.expiresAt());
+        verify(passwordResetTokenRepository).findByEmail("reset@test.com");
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 완료에 성공하면 비밀번호를 변경하고 reset token을 무효화한다.")
+    void confirmPasswordResetSuccess() {
+        // given
+        PasswordResetConfirmRequest request = new PasswordResetConfirmRequest("password-reset-token", "newPassword123!");
+        PasswordResetToken passwordResetToken = PasswordResetToken.builder()
+                .email("reset@test.com")
+                .token("123456")
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .resetToken("password-reset-token")
+                .verifiedAt(LocalDateTime.now().minusMinutes(1))
+                .resetTokenExpiresAt(LocalDateTime.now().plusMinutes(10))
+                .build();
+        User user = User.builder()
+                .email("reset@test.com")
+                .password("encoded-old-password")
+                .nickname("resetUser")
+                .role(UserRole.USER)
+                .build();
+        when(passwordResetTokenRepository.findByResetToken("password-reset-token")).thenReturn(Optional.of(passwordResetToken));
+        when(userRepository.findByEmail("reset@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("newPassword123!", "encoded-old-password")).thenReturn(false);
+        when(passwordEncoder.encode("newPassword123!")).thenReturn("encoded-new-password");
+
+        // when
+        authService.confirmPasswordReset(request);
+
+        // then
+        assertThat(user.getPassword()).isEqualTo("encoded-new-password");
+        assertThat(passwordResetToken.getResetToken()).isNull();
+        assertThat(passwordResetToken.getVerifiedAt()).isNull();
+        assertThat(passwordResetToken.getResetTokenExpiresAt()).isNull();
+        verify(passwordResetTokenRepository).findByResetToken("password-reset-token");
+        verify(userRepository).findByEmail("reset@test.com");
+        verify(passwordEncoder).matches("newPassword123!", "encoded-old-password");
+        verify(passwordEncoder).encode("newPassword123!");
     }
 }

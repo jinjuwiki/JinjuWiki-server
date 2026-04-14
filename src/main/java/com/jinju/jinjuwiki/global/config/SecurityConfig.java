@@ -30,6 +30,8 @@ public class SecurityConfig {
     private static final String AUTH_SIGNUP_PATH = "/api/auth/signup";
     private static final String AUTH_LOGIN_PATH = "/api/auth/login";
     private static final String AUTH_PASSWORD_RESET_REQUEST_PATH = "/api/auth/password/reset/request";
+    private static final String AUTH_PASSWORD_RESET_VERIFY_PATH = "/api/auth/password/reset/verify";
+    private static final String AUTH_PASSWORD_RESET_CONFIRM_PATH = "/api/auth/password/reset/confirm";
     private static final String CATEGORY_LIST_PATH = "/api/categories";
     private static final String DOCUMENT_LIST_PATH = "/api/documents";
     private static final String DOCUMENT_DETAIL_PATH = "/api/documents/*";
@@ -50,7 +52,14 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, AUTH_EMAIL_SEND_PATH, AUTH_EMAIL_VERIFY_PATH).permitAll()
-                        .requestMatchers(HttpMethod.POST, AUTH_SIGNUP_PATH, AUTH_LOGIN_PATH, AUTH_PASSWORD_RESET_REQUEST_PATH)
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                AUTH_SIGNUP_PATH,
+                                AUTH_LOGIN_PATH,
+                                AUTH_PASSWORD_RESET_REQUEST_PATH,
+                                AUTH_PASSWORD_RESET_VERIFY_PATH,
+                                AUTH_PASSWORD_RESET_CONFIRM_PATH
+                        )
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, CATEGORY_LIST_PATH).permitAll()
                         .requestMatchers(HttpMethod.GET, UPLOAD_IMAGE_RESOURCE_PATH).permitAll()

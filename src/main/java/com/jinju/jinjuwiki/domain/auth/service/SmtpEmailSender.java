@@ -40,16 +40,16 @@ public class SmtpEmailSender implements EmailSender {
     }
 
     @Override
-    // 비밀번호 재설정 메일 발송 로직
-    public void sendPasswordResetLink(String to, String token) {
+    // 비밀번호 재설정 인증코드 메일 발송 로직
+    public void sendPasswordResetCode(String to, String code) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
 
             helper.setFrom(from);
             helper.setTo(to);
-            helper.setSubject("[JinjuWiki] 비밀번호 재설정 안내");
-            helper.setText(buildPasswordResetEmailHtml(token), true);
+            helper.setSubject("[JinjuWiki] 비밀번호 재설정 인증번호 안내");
+            helper.setText(buildPasswordResetEmailHtml(code), true);
 
             mailSender.send(message);
         } catch (MailException | MessagingException ex) {
@@ -117,8 +117,8 @@ public class SmtpEmailSender implements EmailSender {
     }
 
     // 재설정 메일 HTML 생성 메서드
-    private String buildPasswordResetEmailHtml(String token) {
-        String escapedToken = escapeHtml(token);
+    private String buildPasswordResetEmailHtml(String code) {
+        String escapedCode = escapeHtml(code);
 
         return """
                 <!DOCTYPE html>
@@ -126,7 +126,7 @@ public class SmtpEmailSender implements EmailSender {
                 <head>
                     <meta charset="UTF-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>JinjuWiki 비밀번호 재설정</title>
+                    <title>JinjuWiki 비밀번호 재설정 인증번호</title>
                 </head>
                 <body style="margin:0; padding:0; background-color:#f4f7fb; font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif; color:#1f2937;">
                     <div style="width:100%%; background-color:#f4f7fb; padding:40px 16px;">
@@ -136,7 +136,7 @@ public class SmtpEmailSender implements EmailSender {
                                     JinjuWiki
                                 </div>
                                 <h1 style="margin:18px 0 0; color:#ffffff; font-size:30px; line-height:1.35; font-weight:600;">
-                                    비밀번호 재설정 안내
+                                    비밀번호 재설정 인증번호 안내
                                 </h1>
                             </div>
 
@@ -145,21 +145,21 @@ public class SmtpEmailSender implements EmailSender {
                                     비밀번호 재설정을 위한 요청이 접수되었습니다.
                                 </p>
                                 <p style="margin:0 0 28px; font-size:16px; line-height:1.7; color:#475569;">
-                                    아래 토큰을 이용해 비밀번호 재설정을 진행해주세요.
+                                    아래 인증번호를 입력해 비밀번호 재설정을 진행해주세요.
                                 </p>
 
-                                <div style="margin:0 0 28px; padding:24px; border-radius:20px; background-color:#eff6ff; border:1px solid #bfdbfe; text-align:center; word-break:break-all;">
+                                <div style="margin:0 0 28px; padding:24px; border-radius:20px; background-color:#eff6ff; border:1px solid #bfdbfe; text-align:center;">
                                     <p style="margin:0 0 12px; font-size:13px; line-height:1.5; letter-spacing:0.08em; text-transform:uppercase; color:#1d4ed8; font-weight:700;">
-                                        Reset Token
+                                        Reset Code
                                     </p>
-                                    <div style="font-size:18px; line-height:1.6; font-weight:700; color:#0f172a;">
+                                    <div style="font-size:40px; line-height:1.1; font-weight:800; letter-spacing:0.18em; color:#0f172a;">
                                         %s
                                     </div>
                                 </div>
 
                                 <div style="margin:0 0 28px; padding:20px 22px; border-radius:16px; background-color:#f8fafc; border:1px solid #e2e8f0;">
                                     <p style="margin:0; font-size:15px; line-height:1.7; color:#334155;">
-                                        토큰은 일정 시간 이후 만료됩니다.<br>
+                                        인증번호는 일정 시간 이후 만료됩니다.<br>
                                         본인이 요청하지 않았다면 이 메일은 무시하셔도 됩니다.
                                     </p>
                                 </div>
@@ -168,7 +168,7 @@ public class SmtpEmailSender implements EmailSender {
                     </div>
                 </body>
                 </html>
-                """.formatted(escapedToken);
+                """.formatted(escapedCode);
     }
 
     // 메일 본문 이스케이프 메서드

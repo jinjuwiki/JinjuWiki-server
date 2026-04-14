@@ -1,12 +1,15 @@
 package com.jinju.jinjuwiki.domain.auth.service;
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetConfirmRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.LoginRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.LoginResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.EmailVerificationSendResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.EmailVerificationVerifyResponse;
+import com.jinju.jinjuwiki.domain.auth.dto.response.PasswordResetVerifyResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.request.SignupRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.SignupResponse;
 
@@ -27,4 +30,10 @@ public interface AuthService {
 
     // 비밀번호 재설정 요청 메서드
     void requestPasswordReset(PasswordResetRequest request);
+
+    // 비밀번호 재설정 인증코드 확인 메서드
+    PasswordResetVerifyResponse verifyPasswordResetCode(PasswordResetVerifyRequest request);
+
+    // 비밀번호 재설정 완료 메서드
+    void confirmPasswordReset(PasswordResetConfirmRequest request);
 }

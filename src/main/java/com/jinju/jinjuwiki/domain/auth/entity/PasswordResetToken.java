@@ -33,16 +33,46 @@ public class PasswordResetToken extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime expiresAt;
 
+    @Column(length = 100)
+    private String resetToken;
+
+    @Column
+    private LocalDateTime verifiedAt;
+
+    @Column
+    private LocalDateTime resetTokenExpiresAt;
+
     @Builder
-    private PasswordResetToken(String email, String token, LocalDateTime expiresAt) {
+    private PasswordResetToken(String email, String token, LocalDateTime expiresAt,
+                               String resetToken, LocalDateTime verifiedAt, LocalDateTime resetTokenExpiresAt) {
         this.email = email;
         this.token = token;
         this.expiresAt = expiresAt;
+        this.resetToken = resetToken;
+        this.verifiedAt = verifiedAt;
+        this.resetTokenExpiresAt = resetTokenExpiresAt;
     }
 
-    // 비밀번호 재설정 토큰 재발급 메서드
+    // 비밀번호 재설정 인증코드 재발급 메서드
     public void reissue(String token, LocalDateTime expiresAt) {
         this.token = token;
         this.expiresAt = expiresAt;
+        this.resetToken = null;
+        this.verifiedAt = null;
+        this.resetTokenExpiresAt = null;
+    }
+
+    // 비밀번호 재설정 확인 완료 기록 메서드
+    public void verify(String resetToken, LocalDateTime verifiedAt, LocalDateTime resetTokenExpiresAt) {
+        this.resetToken = resetToken;
+        this.verifiedAt = verifiedAt;
+        this.resetTokenExpiresAt = resetTokenExpiresAt;
+    }
+
+    // 비밀번호 재설정 토큰 사용 완료 처리 메서드
+    public void clearResetToken() {
+        this.resetToken = null;
+        this.verifiedAt = null;
+        this.resetTokenExpiresAt = null;
     }
 }
