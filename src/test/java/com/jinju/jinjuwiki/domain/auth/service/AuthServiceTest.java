@@ -13,8 +13,10 @@ import com.jinju.jinjuwiki.domain.auth.dto.response.EmailVerificationSendRespons
 import com.jinju.jinjuwiki.domain.auth.entity.EmailVerification;
 import com.jinju.jinjuwiki.domain.auth.dto.request.LoginRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.SignupRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.LoginResponse;
+import com.jinju.jinjuwiki.domain.auth.dto.response.PasswordResetVerifyResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.response.SignupResponse;
 import com.jinju.jinjuwiki.domain.auth.entity.PasswordResetToken;
 import com.jinju.jinjuwiki.domain.auth.repository.EmailVerificationRepository;
@@ -26,6 +28,7 @@ import com.jinju.jinjuwiki.global.error.BusinessException;
 import com.jinju.jinjuwiki.global.error.ErrorCode;
 import com.jinju.jinjuwiki.global.security.JwtTokenProvider;
 import com.jinju.jinjuwiki.global.security.UserPrincipal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -298,5 +301,32 @@ class AuthServiceTest {
         // then
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PASSWORD_RESET_REQUEST_RATE_LIMITED);
         verify(redisPasswordResetRequestRateLimiter).validateAllowed("reset@test.com");
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 인증코드 확인에 성공하면 reset token을 발급한다.")
+    void verifyPasswordResetCodeSuccess() {
+        // given
+        PasswordResetVerifyRequest request = new PasswordResetVerifyRequest("reset@test.com", "123456");
+        PasswordResetToken passwordResetToken = PasswordResetToken.builder()
+                .email("reset@test.com")
+                .token("123456")
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .build();
+        when(passwordResetTokenRepository.findByEmail("reset@test.com")).thenReturn(Optional.of(passwordResetToken));
+        ReflectionTestUtils.setField(authService, "passwordResetExpirationMinutes", 30L);
+
+        // when
+        PasswordResetVerifyResponse response = authService.verifyPasswordResetCode(request);
+
+        // then
+        assertThat(response.resetToken()).isNotBlank();
+        assertThat(response.resetToken()).isNotEqualTo("123456");
+        assertThat(response.verifiedAt()).isNotNull();
+        assertThat(response.expiresAt()).isNotNull();
+        assertThat(passwordResetToken.getResetToken()).isEqualTo(response.resetToken());
+        assertThat(passwordResetToken.getVerifiedAt()).isEqualTo(response.verifiedAt());
+        assertThat(passwordResetToken.getResetTokenExpiresAt()).isEqualTo(response.expiresAt());
+        verify(passwordResetTokenRepository).findByEmail("reset@test.com");
     }
 }
