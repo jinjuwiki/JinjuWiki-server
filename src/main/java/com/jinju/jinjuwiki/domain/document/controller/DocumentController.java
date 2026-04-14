@@ -140,6 +140,24 @@ public class DocumentController {
 
     @GetMapping("/search")
     @Operation(summary = "문서 검색", description = "키워드와 카테고리 조건으로 문서를 검색합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "문서 검색 성공",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 검색어 또는 페이지 파라미터",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "문서 검색 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    // 문서 검색 응답 코드 명세
     public ResponseEntity<ApiResponse<PageResponse<DocumentSummaryResponse>>> searchDocuments(
             @RequestParam String keyword,
             @RequestParam(required = false) Long categoryId,
