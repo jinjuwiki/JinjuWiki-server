@@ -232,6 +232,24 @@ public class AuthController {
 
     @PostMapping("/password/reset/confirm")
     @Operation(summary = "비밀번호 재설정 완료", description = "reset token으로 새 비밀번호를 설정합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "비밀번호 재설정 완료",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 새 비밀번호 또는 만료된 토큰",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "유효하지 않은 비밀번호 재설정 토큰",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    // 비밀번호 재설정 완료 응답 코드 명세
     // 비밀번호 재설정 완료 엔드포인트
     public ResponseEntity<ApiResponse<Void>> confirmPasswordReset(
             @Valid @RequestBody PasswordResetConfirmRequest request
