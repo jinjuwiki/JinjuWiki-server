@@ -190,7 +190,24 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     // 비밀번호 재설정 인증코드 확인 로직
     public PasswordResetVerifyResponse verifyPasswordResetCode(PasswordResetVerifyRequest request) {
-        throw new UnsupportedOperationException("Password reset verify not implemented yet");
+        PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByEmail(request.email())
+                .orElseThrow(() -> new BusinessException(ErrorCode.PASSWORD_RESET_NOT_FOUND));
+
+        LocalDateTime now = LocalDateTime.now();
+        if (passwordResetToken.getExpiresAt().isBefore(now)) {
+            throw new BusinessException(ErrorCode.PASSWORD_RESET_EXPIRED);
+        }
+
+        if (!passwordResetToken.getToken().equals(request.code())) {
+            throw new BusinessException(ErrorCode.PASSWORD_RESET_CODE_MISMATCH);
+        }
+
+        LocalDateTime resetTokenExpiresAt = now.plusMinutes(passwordResetExpirationMinutes);
+        return new PasswordResetVerifyResponse(
+                passwordResetToken.getToken(),
+                now,
+                resetTokenExpiresAt
+        );
     }
 
     // 이메일 인증코드 생성 메서드
