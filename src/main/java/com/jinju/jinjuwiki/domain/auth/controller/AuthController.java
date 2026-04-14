@@ -199,6 +199,29 @@ public class AuthController {
 
     @PostMapping("/password/reset/verify")
     @Operation(summary = "비밀번호 재설정 인증코드 확인", description = "비밀번호 재설정 인증코드를 확인하고 reset token을 발급합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "비밀번호 재설정 인증코드 확인 성공",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 인증코드 또는 만료된 인증코드",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "비밀번호 재설정 요청을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "429",
+                    description = "인증코드 검증 시도 횟수 초과",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    // 비밀번호 재설정 인증코드 확인 응답 코드 명세
     // 비밀번호 재설정 인증코드 확인 엔드포인트
     public ResponseEntity<ApiResponse<PasswordResetVerifyResponse>> verifyPasswordResetCode(
             @Valid @RequestBody PasswordResetVerifyRequest request
