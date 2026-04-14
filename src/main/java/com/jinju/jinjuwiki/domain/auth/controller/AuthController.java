@@ -1,6 +1,7 @@
 package com.jinju.jinjuwiki.domain.auth.controller;
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetConfirmRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.EmailVerificationSendResponse;
@@ -85,5 +86,15 @@ public class AuthController {
     ) {
         PasswordResetVerifyResponse response = authService.verifyPasswordResetCode(request);
         return ResponseEntity.ok(ApiResponse.of("인증코드가 확인되었습니다.", response));
+    }
+
+    @PostMapping("/password/reset/confirm")
+    @Operation(summary = "비밀번호 재설정 완료", description = "reset token으로 새 비밀번호를 설정합니다.")
+    // 비밀번호 재설정 완료 엔드포인트
+    public ResponseEntity<ApiResponse<Void>> confirmPasswordReset(
+            @Valid @RequestBody PasswordResetConfirmRequest request
+    ) {
+        authService.confirmPasswordReset(request);
+        return ResponseEntity.ok(ApiResponse.success("비밀번호가 재설정되었습니다."));
     }
 }
