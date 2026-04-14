@@ -6,10 +6,14 @@ import com.jinju.jinjuwiki.domain.document.dto.response.DocumentDetailResponse;
 import com.jinju.jinjuwiki.domain.document.dto.response.DocumentSummaryResponse;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.service.DocumentService;
+import com.jinju.jinjuwiki.global.error.ErrorResponse;
 import com.jinju.jinjuwiki.global.response.ApiResponse;
 import com.jinju.jinjuwiki.global.response.PageResponse;
 import com.jinju.jinjuwiki.global.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,6 +49,28 @@ public class DocumentController {
             description = "새 문서를 작성합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "201",
+                    description = "문서 생성 성공",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 본문",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "존재하지 않는 카테고리",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    // 문서 작성 응답 코드 명세
     public ResponseEntity<ApiResponse<DocumentCreateResponse>> createDocument(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody DocumentCreateRequest request
@@ -55,6 +81,24 @@ public class DocumentController {
 
     @GetMapping("/{id}")
     @Operation(summary = "문서 상세 조회", description = "문서 상세 정보와 내용을 조회합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "문서 상세 조회 성공",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "문서를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "문서 상세 조회 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    // 문서 상세 조회 응답 코드 명세
     public ResponseEntity<ApiResponse<DocumentDetailResponse>> getDocument(
             @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal userPrincipal,
@@ -67,6 +111,24 @@ public class DocumentController {
 
     @GetMapping
     @Operation(summary = "문서 목록 조회", description = "카테고리별 문서 목록을 페이지 단위로 조회합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "문서 목록 조회 성공",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 페이지 파라미터",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "문서 목록 조회 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    // 문서 목록 조회 응답 코드 명세
     public ResponseEntity<ApiResponse<PageResponse<DocumentSummaryResponse>>> getDocuments(
             @RequestParam(required = false) Long categoryId, // 카테고리 필터
             @RequestParam(defaultValue = "0") int page,
@@ -78,6 +140,24 @@ public class DocumentController {
 
     @GetMapping("/search")
     @Operation(summary = "문서 검색", description = "키워드와 카테고리 조건으로 문서를 검색합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "문서 검색 성공",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 검색어 또는 페이지 파라미터",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "문서 검색 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    // 문서 검색 응답 코드 명세
     public ResponseEntity<ApiResponse<PageResponse<DocumentSummaryResponse>>> searchDocuments(
             @RequestParam String keyword,
             @RequestParam(required = false) Long categoryId,
@@ -94,6 +174,33 @@ public class DocumentController {
             description = "작성자 본인의 문서를 수정합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "문서 수정 성공",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 본문",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "문서를 수정할 권한이 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "문서 또는 카테고리를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    // 문서 수정 응답 코드 명세
     public ResponseEntity<ApiResponse<DocumentDetailResponse>> updateDocument(
             @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal userPrincipal,
@@ -109,6 +216,28 @@ public class DocumentController {
             description = "작성자 본인의 문서를 삭제합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "문서 삭제 성공",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "문서를 삭제할 권한이 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "문서를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    // 문서 삭제 응답 코드 명세
     public ResponseEntity<ApiResponse<Void>> deleteDocument(
             @PathVariable Long id,
             @AuthenticationPrincipal UserPrincipal userPrincipal

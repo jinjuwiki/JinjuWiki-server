@@ -1,12 +1,17 @@
 package com.jinju.jinjuwiki.global.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
 // 성공/실패 공통 응답 DTO
 @Getter
+@Schema(description = "공통 성공 응답")
 public class ApiResponse<T> {
 
+    @Schema(description = "응답 메시지, 없는 경우 null", nullable = true, example = "문서가 생성되었습니다.")
     private final String message;
+
+    @Schema(description = "응답 데이터 본문", nullable = true)
     private final T data;
 
     private ApiResponse(String message, T data) {
