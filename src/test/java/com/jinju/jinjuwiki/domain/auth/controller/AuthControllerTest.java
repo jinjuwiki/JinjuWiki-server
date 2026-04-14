@@ -2,6 +2,7 @@ package com.jinju.jinjuwiki.domain.auth.controller;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -9,11 +10,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetVerifyRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.response.PasswordResetVerifyResponse;
 import com.jinju.jinjuwiki.domain.auth.service.AuthService;
 import com.jinju.jinjuwiki.global.error.BusinessException;
 import com.jinju.jinjuwiki.global.error.ErrorCode;
 import com.jinju.jinjuwiki.global.error.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -106,5 +110,30 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.path").value("/api/auth/email/verify"));
 
         verify(authService).verifyCode(request);
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 인증코드 확인에 성공하면 reset token을 반환한다.")
+    void verifyPasswordResetCodeSuccess() throws Exception {
+        // given
+        PasswordResetVerifyRequest request = new PasswordResetVerifyRequest("reset@test.com", "123456");
+        PasswordResetVerifyResponse response = new PasswordResetVerifyResponse(
+                "password-reset-token",
+                LocalDateTime.of(2026, 4, 13, 16, 5, 0),
+                LocalDateTime.of(2026, 4, 13, 16, 15, 0)
+        );
+        when(authService.verifyPasswordResetCode(request)).thenReturn(response);
+
+        // when & then
+        mockMvc.perform(post("/api/auth/password/reset/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("인증코드가 확인되었습니다."))
+                .andExpect(jsonPath("$.data.resetToken").value("password-reset-token"))
+                .andExpect(jsonPath("$.data.verifiedAt").value("2026-04-13T16:05:00"))
+                .andExpect(jsonPath("$.data.expiresAt").value("2026-04-13T16:15:00"));
+
+        verify(authService).verifyPasswordResetCode(request);
     }
 }
