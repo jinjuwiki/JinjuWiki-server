@@ -109,6 +109,28 @@ public class UserController {
             description = "현재 비밀번호를 확인한 뒤 새 비밀번호로 변경합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "비밀번호 수정 성공",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 비밀번호 형식 또는 현재 비밀번호 불일치",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    // 내 비밀번호 수정 응답 코드 명세
     public ResponseEntity<ApiResponse<Void>> updateMyPassword(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody UserPasswordUpdateRequest request
