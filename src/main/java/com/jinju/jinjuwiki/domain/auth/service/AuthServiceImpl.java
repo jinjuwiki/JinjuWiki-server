@@ -180,6 +180,9 @@ public class AuthServiceImpl implements AuthService {
                     .email(request.email())
                     .token(code)
                     .expiresAt(expiresAt)
+                    .resetToken(null)
+                    .verifiedAt(null)
+                    .resetTokenExpiresAt(null)
                     .build());
         }
 
@@ -202,11 +205,14 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.PASSWORD_RESET_CODE_MISMATCH);
         }
 
+        String resetToken = generatePasswordResetToken();
         LocalDateTime resetTokenExpiresAt = now.plusMinutes(passwordResetExpirationMinutes);
+        passwordResetToken.verify(resetToken, now, resetTokenExpiresAt);
+
         return new PasswordResetVerifyResponse(
-                passwordResetToken.getToken(),
-                now,
-                resetTokenExpiresAt
+                resetToken,
+                passwordResetToken.getVerifiedAt(),
+                passwordResetToken.getResetTokenExpiresAt()
         );
     }
 
@@ -218,6 +224,11 @@ public class AuthServiceImpl implements AuthService {
     // 비밀번호 재설정 인증코드 생성 메서드
     private String generatePasswordResetCode() {
         return String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
+    }
+
+    // 비밀번호 재설정 토큰 생성 메서드
+    private String generatePasswordResetToken() {
+        return java.util.UUID.randomUUID().toString();
     }
 
     // 이메일 인증 발송 제한 예외 변환 메서드
