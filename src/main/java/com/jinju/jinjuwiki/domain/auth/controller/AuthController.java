@@ -1,10 +1,12 @@
 package com.jinju.jinjuwiki.domain.auth.controller;
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.EmailVerificationSendResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.EmailVerificationVerifyResponse;
+import com.jinju.jinjuwiki.domain.auth.dto.response.PasswordResetVerifyResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.request.LoginRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.LoginResponse;
 import com.jinju.jinjuwiki.domain.auth.dto.request.SignupRequest;
@@ -73,5 +75,15 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> requestPasswordReset(@Valid @RequestBody PasswordResetRequest request) {
         authService.requestPasswordReset(request);
         return ResponseEntity.ok(ApiResponse.success("비밀번호 재설정 요청이 접수되었습니다."));
+    }
+
+    @PostMapping("/password/reset/verify")
+    @Operation(summary = "비밀번호 재설정 인증코드 확인", description = "비밀번호 재설정 인증코드를 확인하고 reset token을 발급합니다.")
+    // 비밀번호 재설정 인증코드 확인 엔드포인트
+    public ResponseEntity<ApiResponse<PasswordResetVerifyResponse>> verifyPasswordResetCode(
+            @Valid @RequestBody PasswordResetVerifyRequest request
+    ) {
+        PasswordResetVerifyResponse response = authService.verifyPasswordResetCode(request);
+        return ResponseEntity.ok(ApiResponse.of("인증코드가 확인되었습니다.", response));
     }
 }
