@@ -5,10 +5,6 @@ import com.jinju.jinjuwiki.domain.document.dto.response.DocumentCreateResponse;
 import com.jinju.jinjuwiki.domain.document.dto.response.DocumentDetailResponse;
 import com.jinju.jinjuwiki.domain.document.dto.response.DocumentSummaryResponse;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
-import com.jinju.jinjuwiki.domain.document.entity.Document;
-import com.jinju.jinjuwiki.domain.document.mapper.DocumentCreateResponseMapper;
-import com.jinju.jinjuwiki.domain.document.mapper.DocumentDetailResponseMapper;
-import com.jinju.jinjuwiki.domain.document.mapper.DocumentSummaryResponseMapper;
 import com.jinju.jinjuwiki.domain.document.service.DocumentService;
 import com.jinju.jinjuwiki.global.response.ApiResponse;
 import com.jinju.jinjuwiki.global.response.PageResponse;
@@ -23,7 +19,6 @@ import java.net.UnknownHostException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -54,8 +49,7 @@ public class DocumentController {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody DocumentCreateRequest request
     ) {
-        Document document = documentService.createDocument(request, userPrincipal.getId());
-        DocumentCreateResponse response = DocumentCreateResponseMapper.toResponse(document);
+        DocumentCreateResponse response = documentService.createDocument(request, userPrincipal.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of("문서가 생성되었습니다.", response));
     }
 
@@ -67,8 +61,7 @@ public class DocumentController {
             HttpServletRequest request
     ) {
         Long viewerUserId = userPrincipal == null ? null : userPrincipal.getId();
-        Document document = documentService.getDocument(id, viewerUserId, extractViewerIp(request));
-        DocumentDetailResponse response = DocumentDetailResponseMapper.toResponse(document);
+        DocumentDetailResponse response = documentService.getDocument(id, viewerUserId, extractViewerIp(request));
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
@@ -79,9 +72,7 @@ public class DocumentController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<Document> documents = documentService.getDocuments(categoryId, page, size);
-        PageResponse<DocumentSummaryResponse> response =
-                PageResponse.from(documents.map(DocumentSummaryResponseMapper::toResponse));
+        PageResponse<DocumentSummaryResponse> response = documentService.getDocuments(categoryId, page, size);
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
@@ -93,9 +84,7 @@ public class DocumentController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<Document> documents = documentService.searchDocuments(keyword, categoryId, page, size);
-        PageResponse<DocumentSummaryResponse> response =
-                PageResponse.from(documents.map(DocumentSummaryResponseMapper::toResponse));
+        PageResponse<DocumentSummaryResponse> response = documentService.searchDocuments(keyword, categoryId, page, size);
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
@@ -110,8 +99,7 @@ public class DocumentController {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Valid @RequestBody DocumentUpdateRequest request
     ) {
-        Document document = documentService.updateDocument(id, request, userPrincipal.getId());
-        DocumentDetailResponse response = DocumentDetailResponseMapper.toResponse(document);
+        DocumentDetailResponse response = documentService.updateDocument(id, request, userPrincipal.getId());
         return ResponseEntity.ok(ApiResponse.of("문서가 수정되었습니다.", response));
     }
 

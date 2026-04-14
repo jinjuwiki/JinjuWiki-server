@@ -4,7 +4,13 @@ import com.jinju.jinjuwiki.domain.category.entity.Category;
 import com.jinju.jinjuwiki.domain.category.repository.CategoryRepository;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentCreateRequest;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
+import com.jinju.jinjuwiki.domain.document.dto.response.DocumentCreateResponse;
+import com.jinju.jinjuwiki.domain.document.dto.response.DocumentDetailResponse;
+import com.jinju.jinjuwiki.domain.document.dto.response.DocumentSummaryResponse;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
+import com.jinju.jinjuwiki.domain.document.mapper.DocumentCreateResponseMapper;
+import com.jinju.jinjuwiki.domain.document.mapper.DocumentDetailResponseMapper;
+import com.jinju.jinjuwiki.domain.document.mapper.DocumentSummaryResponseMapper;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.document.support.DocumentContentJsonCodec;
 import com.jinju.jinjuwiki.domain.search.service.DocumentViewLogService;
@@ -13,6 +19,7 @@ import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import com.jinju.jinjuwiki.global.error.BusinessException;
 import com.jinju.jinjuwiki.global.error.ErrorCode;
+import com.jinju.jinjuwiki.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -33,7 +40,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     @Transactional
-    public Document createDocument(DocumentCreateRequest request, Long currentUserId) {
+    // 문서 생성 응답 조립 메서드
+    public DocumentCreateResponse createDocument(DocumentCreateRequest request, Long currentUserId) {
         User author = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         Category category = categoryRepository.findById(request.categoryId())
@@ -49,30 +57,37 @@ public class DocumentServiceImpl implements DocumentService {
                 .category(category)
                 .build();
 
-        return documentRepository.save(document);
+        Document savedDocument = documentRepository.save(document);
+        return DocumentCreateResponseMapper.toResponse(savedDocument);
     }
 
     @Override
     @Transactional
-    public Document getDocument(Long id, Long viewerUserId, String viewerIp) {
+    // 문서 상세 응답 조립 메서드
+    public DocumentDetailResponse getDocument(Long id, Long viewerUserId, String viewerIp) {
         Document document = documentDomainService.getDocument(id);
 
         if (recordDocumentView(document, viewerUserId, viewerIp)) {
             bufferDocumentViewCount(document);
         }
-        return document;
+        return DocumentDetailResponseMapper.toResponse(document);
     }
 
     @Override
-    public Page<Document> getDocuments(Long categoryId, int page, int size) {
+    @Transactional(readOnly = true)
+    // 문서 목록 응답 조립 메서드
+    public PageResponse<DocumentSummaryResponse> getDocuments(Long categoryId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return categoryId == null
+        Page<Document> documents = categoryId == null
                 ? documentRepository.findAllByOrderByCreatedAtDesc(pageable)
                 : documentRepository.findByCategoryIdOrderByCreatedAtDesc(categoryId, pageable);
+        return PageResponse.from(documents.map(DocumentSummaryResponseMapper::toResponse));
     }
 
     @Override
-    public Page<Document> searchDocuments(String keyword, Long categoryId, int page, int size) {
+    @Transactional(readOnly = true)
+    // 문서 검색 응답 조립 메서드
+    public PageResponse<DocumentSummaryResponse> searchDocuments(String keyword, Long categoryId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         String normalizedKeyword = keyword == null ? "" : keyword.trim();
 
@@ -80,14 +95,16 @@ public class DocumentServiceImpl implements DocumentService {
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         }
 
-        return categoryId == null
+        Page<Document> documents = categoryId == null
                 ? documentRepository.searchByKeyword(normalizedKeyword, pageable)
                 : documentRepository.searchByCategoryAndKeyword(categoryId, normalizedKeyword, pageable);
+        return PageResponse.from(documents.map(DocumentSummaryResponseMapper::toResponse));
     }
 
     @Override
     @Transactional
-    public Document updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId) {
+    // 문서 수정 응답 조립 메서드
+    public DocumentDetailResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId) {
         Document document = documentDomainService.getDocument(id);
         documentDomainService.validateAuthor(document, currentUserId);
 
@@ -102,7 +119,7 @@ public class DocumentServiceImpl implements DocumentService {
                 DocumentContentJsonCodec.writeValue(request.contentJson()),
                 category
         );
-        return document;
+        return DocumentDetailResponseMapper.toResponse(document);
     }
 
     @Override
