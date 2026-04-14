@@ -207,7 +207,7 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("비밀번호 재설정 요청이 오면 토큰을 저장하고 메일을 발송한다.")
+    @DisplayName("비밀번호 재설정 요청이 오면 인증코드를 저장하고 메일을 발송한다.")
     void requestPasswordResetSuccess() {
         // given
         PasswordResetRequest request = new PasswordResetRequest("reset@test.com");
@@ -229,11 +229,11 @@ class AuthServiceTest {
         verify(userRepository).findByEmail("reset@test.com");
         verify(passwordResetTokenRepository).findByEmail("reset@test.com");
         verify(passwordResetTokenRepository).save(any(PasswordResetToken.class));
-        verify(emailSender).sendPasswordResetLink(eq("reset@test.com"), any(String.class));
+        verify(emailSender).sendPasswordResetCode(eq("reset@test.com"), any(String.class));
     }
 
     @Test
-    @DisplayName("이미 발급된 재설정 토큰이 있으면 갱신한다.")
+    @DisplayName("이미 발급된 재설정 인증코드가 있으면 갱신한다.")
     void requestPasswordResetReissueSuccess() {
         // given
         PasswordResetRequest request = new PasswordResetRequest("reset@test.com");
@@ -259,7 +259,7 @@ class AuthServiceTest {
         assertThat(token.getToken()).isNotEqualTo("old-token");
         verify(redisPasswordResetRequestRateLimiter).validateAllowed("reset@test.com");
         verify(passwordResetTokenRepository).findByEmail("reset@test.com");
-        verify(emailSender).sendPasswordResetLink("reset@test.com", token.getToken());
+        verify(emailSender).sendPasswordResetCode("reset@test.com", token.getToken());
     }
 
     @Test
@@ -277,7 +277,7 @@ class AuthServiceTest {
         verify(userRepository).findByEmail("missing@test.com");
         verify(passwordResetTokenRepository, org.mockito.Mockito.never()).findByEmail(any());
         verify(passwordResetTokenRepository, org.mockito.Mockito.never()).save(any());
-        verify(emailSender, org.mockito.Mockito.never()).sendPasswordResetLink(any(), any());
+        verify(emailSender, org.mockito.Mockito.never()).sendPasswordResetCode(any(), any());
     }
 
     @Test
