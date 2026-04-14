@@ -3,9 +3,13 @@ package com.jinju.jinjuwiki.domain.upload.controller;
 import com.jinju.jinjuwiki.domain.upload.dto.request.ImageUploadRequest;
 import com.jinju.jinjuwiki.domain.upload.dto.response.ImageUploadResponse;
 import com.jinju.jinjuwiki.domain.upload.service.UploadService;
+import com.jinju.jinjuwiki.global.error.ErrorResponse;
 import com.jinju.jinjuwiki.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -33,6 +37,27 @@ public class UploadController {
             description = "문서 본문에 사용할 이미지를 업로드합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "201",
+                    description = "이미지 업로드 성공",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "빈 파일 또는 지원하지 않는 파일 형식",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "이미지 업로드 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
     @RequestBody(description = "multipart/form-data 이미지 업로드 요청", required = true)
     // multipart 이미지 업로드 계약 명세
     public ResponseEntity<ApiResponse<ImageUploadResponse>> uploadImage(
