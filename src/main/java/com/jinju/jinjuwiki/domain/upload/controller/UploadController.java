@@ -5,11 +5,13 @@ import com.jinju.jinjuwiki.domain.upload.dto.response.ImageUploadResponse;
 import com.jinju.jinjuwiki.domain.upload.service.UploadService;
 import com.jinju.jinjuwiki.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,12 +27,14 @@ public class UploadController {
 
     private final UploadService uploadService;
 
-    @PostMapping("/images")
+    @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
             summary = "문서 본문 이미지 업로드",
             description = "문서 본문에 사용할 이미지를 업로드합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
+    @RequestBody(description = "multipart/form-data 이미지 업로드 요청", required = true)
+    // multipart 이미지 업로드 계약 명세
     public ResponseEntity<ApiResponse<ImageUploadResponse>> uploadImage(
             @Valid @ModelAttribute ImageUploadRequest request
     ) {
