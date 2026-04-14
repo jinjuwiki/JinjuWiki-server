@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetConfirmRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.response.PasswordResetVerifyResponse;
 import com.jinju.jinjuwiki.domain.auth.service.AuthService;
@@ -135,5 +136,25 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.expiresAt").value("2026-04-13T16:15:00"));
 
         verify(authService).verifyPasswordResetCode(request);
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 완료에 성공하면 성공 메시지를 반환한다.")
+    void confirmPasswordResetSuccess() throws Exception {
+        // given
+        PasswordResetConfirmRequest request = new PasswordResetConfirmRequest(
+                "password-reset-token",
+                "newPassword123!"
+        );
+
+        // when & then
+        mockMvc.perform(post("/api/auth/password/reset/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("비밀번호가 재설정되었습니다."))
+                .andExpect(jsonPath("$.data").doesNotExist());
+
+        verify(authService).confirmPasswordReset(request);
     }
 }
