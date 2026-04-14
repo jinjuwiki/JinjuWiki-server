@@ -91,7 +91,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || "/api/auth/email/verify".equals(requestUri)
                 || "/api/auth/signup".equals(requestUri)
                 || "/api/auth/login".equals(requestUri)
-                || "/api/auth/password/reset/request".equals(requestUri);
+                || "/api/auth/password/reset/request".equals(requestUri)
+                || "/api/auth/password/reset/verify".equals(requestUri)
+                || "/api/auth/password/reset/confirm".equals(requestUri);
     }
 
     // 공개 조회 경로 확인 함수
