@@ -73,6 +73,29 @@ public class AuthController {
 
     @PostMapping("/email/verify")
     @Operation(summary = "이메일 인증코드 검증", description = "발송된 이메일 인증코드를 검증합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "이메일 인증 성공",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 인증코드 또는 만료된 인증코드",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "이메일 인증 요청을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "429",
+                    description = "인증코드 검증 시도 횟수 초과",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    // 이메일 인증코드 검증 응답 코드 명세
     // 이메일 인증코드 검증 엔드포인트
     public ResponseEntity<ApiResponse<EmailVerificationVerifyResponse>> verifyCode(
             @Valid @RequestBody EmailVerificationVerifyRequest request
