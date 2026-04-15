@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 // 업로드 정적 리소스 매핑
@@ -19,5 +20,12 @@ public class WebResourceConfig implements WebMvcConfigurer {
 
         registry.addResourceHandler("/uploads/images/**")
                 .addResourceLocations(absoluteUploadPath);
+    }
+
+    // Swagger 기본 진입 경로 리다이렉트 설정
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addRedirectViewController("/swagger-ui", "/swagger-ui/index.html");
+        registry.addRedirectViewController("/swagger-ui/", "/swagger-ui/index.html");
     }
 }
