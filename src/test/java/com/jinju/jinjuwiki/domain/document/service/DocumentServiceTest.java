@@ -16,6 +16,8 @@ import com.jinju.jinjuwiki.domain.category.repository.CategoryRepository;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentCreateRequest;
 import com.jinju.jinjuwiki.domain.document.dto.request.DocumentUpdateRequest;
 import com.jinju.jinjuwiki.domain.document.dto.response.DocumentCreateResponse;
+import com.jinju.jinjuwiki.domain.document.dto.response.DocumentDetailResponse;
+import com.jinju.jinjuwiki.domain.document.dto.response.DocumentSummaryResponse;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import com.jinju.jinjuwiki.domain.document.support.DocumentContentJsonCodec;
@@ -26,6 +28,7 @@ import com.jinju.jinjuwiki.domain.user.entity.UserRole;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import com.jinju.jinjuwiki.global.error.BusinessException;
 import com.jinju.jinjuwiki.global.error.ErrorCode;
+import com.jinju.jinjuwiki.global.response.PageResponse;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -152,11 +155,12 @@ class DocumentServiceTest {
         when(redisDocumentViewCountBuffer.increment(200L)).thenReturn(1L);
 
         // when
-        Document response = documentService.getDocument(200L, 2L, "127.0.0.1");
+        DocumentDetailResponse response = documentService.getDocument(200L, 2L, "127.0.0.1");
 
         // then
-        assertThat(response.getId()).isEqualTo(200L);
-        assertThat(response.getViewCount()).isEqualTo(1L);
+        assertThat(response.documentId()).isEqualTo(200L);
+        assertThat(response.viewCount()).isEqualTo(1L);
+        assertThat(response.title()).isEqualTo("수학 공부법");
         verify(documentDomainService).getDocument(200L);
         verify(documentViewLogService).save(document, 2L, null);
         verify(redisDocumentViewCountBuffer).increment(200L);
@@ -188,11 +192,12 @@ class DocumentServiceTest {
                 .thenReturn(pageResponse);
 
         // when
-        Page<Document> response = documentService.getDocuments(30L, 0, 10);
+        PageResponse<DocumentSummaryResponse> response = documentService.getDocuments(30L, 0, 10);
 
         // then
-        assertThat(response.getContent()).hasSize(2);
-        assertThat(response.getContent().get(0).getTitle()).isEqualTo("두 번째 글");
+        assertThat(response.content()).hasSize(2);
+        assertThat(response.content().get(0).title()).isEqualTo("두 번째 글");
+        assertThat(response.content().get(1).title()).isEqualTo("첫 번째 글");
         verify(documentRepository).findByCategoryIdOrderByCreatedAtDesc(eq(30L), any(Pageable.class));
     }
 
@@ -210,18 +215,18 @@ class DocumentServiceTest {
         when(categoryRepository.findById(41L)).thenReturn(Optional.of(updatedCategory));
 
         // when
-        Document response = documentService.updateDocument(
+        DocumentDetailResponse response = documentService.updateDocument(
                 400L,
                 new DocumentUpdateRequest("수정 제목", "수정 요약", 41L, 2024, updatedContentJson),
                 4L
         );
 
         // then
-        assertThat(response.getTitle()).isEqualTo("수정 제목");
-        assertThat(response.getSummary()).isEqualTo("수정 요약");
-        assertThat(response.getEventYear()).isEqualTo(2024);
-        assertThat(DocumentContentJsonCodec.readTree(response.getContentJson())).isEqualTo(updatedContentJson);
-        assertThat(response.getCategory().getName()).isEqualTo("선생님");
+        assertThat(response.title()).isEqualTo("수정 제목");
+        assertThat(response.summary()).isEqualTo("수정 요약");
+        assertThat(response.eventYear()).isEqualTo(2024);
+        assertThat(response.contentJson()).isEqualTo(updatedContentJson);
+        assertThat(response.categoryName()).isEqualTo("선생님");
         verify(documentDomainService).getDocument(400L);
         verify(documentDomainService).validateAuthor(document, 4L);
         verify(categoryRepository).findById(41L);
@@ -329,11 +334,11 @@ class DocumentServiceTest {
         when(documentRepository.searchByKeyword(eq("공부"), any(Pageable.class))).thenReturn(searchResult);
 
         // when
-        Page<Document> response = documentService.searchDocuments("공부", null, 0, 10);
+        PageResponse<DocumentSummaryResponse> response = documentService.searchDocuments("공부", null, 0, 10);
 
         // then
-        assertThat(response.getContent()).hasSize(1);
-        assertThat(response.getContent().get(0).getTitle()).isEqualTo("수학 공부법");
+        assertThat(response.content()).hasSize(1);
+        assertThat(response.content().get(0).title()).isEqualTo("수학 공부법");
         verify(documentRepository).searchByKeyword(eq("공부"), any(Pageable.class));
     }
 
@@ -354,11 +359,11 @@ class DocumentServiceTest {
                 .thenReturn(searchResult);
 
         // when
-        Page<Document> response = documentService.searchDocuments("시험", 110L, 0, 10);
+        PageResponse<DocumentSummaryResponse> response = documentService.searchDocuments("시험", 110L, 0, 10);
 
         // then
-        assertThat(response.getContent()).hasSize(1);
-        assertThat(response.getContent().get(0).getCategory().getName()).isEqualTo("학생");
+        assertThat(response.content()).hasSize(1);
+        assertThat(response.content().get(0).categoryName()).isEqualTo("학생");
         verify(documentRepository).searchByCategoryAndKeyword(eq(110L), eq("시험"), any(Pageable.class));
     }
 
