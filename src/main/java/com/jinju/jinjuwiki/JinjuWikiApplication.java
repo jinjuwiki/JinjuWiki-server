@@ -2,10 +2,12 @@ package com.jinju.jinjuwiki;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 // 애플리케이션 부트스트랩 및 스케줄링 활성화 클래스
 @SpringBootApplication
+@EnableAsync
 @EnableScheduling
 public class JinjuWikiApplication {
 
