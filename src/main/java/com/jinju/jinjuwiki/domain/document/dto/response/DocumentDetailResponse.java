@@ -16,6 +16,10 @@ public record DocumentDetailResponse(
         Long categoryId,
         @Schema(description = "카테고리 이름", example = "역사")
         String categoryName,
+        @Schema(description = "연결된 학교 문서 ID", example = "101", nullable = true)
+        Long schoolDocumentId,
+        @Schema(description = "연결된 학교 문서 제목", example = "진주고등학교", nullable = true)
+        String schoolName,
         @Schema(description = "사건 발생 연도, 일반 문서는 null 가능", example = "1592", nullable = true)
         Integer eventYear,
         @Schema(description = "작성자 사용자 ID", example = "7")

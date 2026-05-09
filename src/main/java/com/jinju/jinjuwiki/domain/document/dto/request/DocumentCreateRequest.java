@@ -29,6 +29,9 @@ public record DocumentCreateRequest(
         @NotNull(message = "카테고리 ID는 필수입니다.")
         Long categoryId,
 
+        @Schema(description = "학교 하위 문서가 속한 학교 문서 ID", example = "101", nullable = true)
+        Long schoolDocumentId,
+
         @Schema(description = "사건 발생 연도, 일반 문서는 비워둘 수 있는 필드", example = "1592", nullable = true)
         Integer eventYear,
 

@@ -59,17 +59,31 @@ public class Document extends BaseEntity {
     @JoinColumn(name = "fk_category_id", nullable = false)
     private Category category;
 
+    // 학교 하위 문서가 어느 학교 문서에 속하는지 연결한다.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_school_document_id")
+    private Document schoolDocument;
+
     public void increaseViewCount() {
         this.viewCount++;
     }
 
-    public void update(String title, String content, String summary, Integer eventYear, String contentJson, Category category) {
+    public void update(
+            String title,
+            String content,
+            String summary,
+            Integer eventYear,
+            String contentJson,
+            Category category,
+            Document schoolDocument
+    ) {
         this.title = title;
         this.content = content;
         this.summary = summary;
         this.eventYear = eventYear;
         this.contentJson = contentJson;
         this.category = category;
+        this.schoolDocument = schoolDocument;
     }
 
     public boolean isWrittenBy(Long userId) {

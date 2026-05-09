@@ -13,9 +13,9 @@ public interface DocumentService {
 
     DocumentDetailResponse getDocument(Long id, Long viewerUserId, String viewerIp);
 
-    PageResponse<DocumentSummaryResponse> getDocuments(Long categoryId, int page, int size);
+    PageResponse<DocumentSummaryResponse> getDocuments(Long categoryId, Long schoolDocumentId, int page, int size);
 
-    PageResponse<DocumentSummaryResponse> searchDocuments(String keyword, Long categoryId, int page, int size);
+    PageResponse<DocumentSummaryResponse> searchDocuments(String keyword, Long categoryId, Long schoolDocumentId, int page, int size);
 
     DocumentDetailResponse updateDocument(Long id, DocumentUpdateRequest request, Long currentUserId);
 

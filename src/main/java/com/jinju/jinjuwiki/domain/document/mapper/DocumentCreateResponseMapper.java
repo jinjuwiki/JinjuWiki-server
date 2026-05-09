@@ -16,6 +16,8 @@ public class DocumentCreateResponseMapper {
                 document.getSummary(),
                 document.getCategory().getId(),
                 document.getCategory().getName(),
+                document.getSchoolDocument() == null ? null : document.getSchoolDocument().getId(),
+                document.getSchoolDocument() == null ? null : document.getSchoolDocument().getTitle(),
                 document.getEventYear(),
                 document.getAuthor().getId(),
                 document.getAuthor().getNickname(),

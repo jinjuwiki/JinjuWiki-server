@@ -131,10 +131,11 @@ public class DocumentController {
     // 문서 목록 조회 응답 코드 명세
     public ResponseEntity<ApiResponse<PageResponse<DocumentSummaryResponse>>> getDocuments(
             @RequestParam(required = false) Long categoryId, // 카테고리 필터
+            @RequestParam(required = false) Long schoolDocumentId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        PageResponse<DocumentSummaryResponse> response = documentService.getDocuments(categoryId, page, size);
+        PageResponse<DocumentSummaryResponse> response = documentService.getDocuments(categoryId, schoolDocumentId, page, size);
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
@@ -161,10 +162,11 @@ public class DocumentController {
     public ResponseEntity<ApiResponse<PageResponse<DocumentSummaryResponse>>> searchDocuments(
             @RequestParam String keyword,
             @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long schoolDocumentId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        PageResponse<DocumentSummaryResponse> response = documentService.searchDocuments(keyword, categoryId, page, size);
+        PageResponse<DocumentSummaryResponse> response = documentService.searchDocuments(keyword, categoryId, schoolDocumentId, page, size);
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 

@@ -1,6 +1,7 @@
 package com.jinju.jinjuwiki.domain.document.repository;
 
 import com.jinju.jinjuwiki.domain.document.entity.Document;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,6 +16,14 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     Page<Document> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     Page<Document> findByCategoryIdOrderByCreatedAtDesc(Long categoryId, Pageable pageable);
+
+    Page<Document> findBySchoolDocumentIdOrderByCreatedAtDesc(Long schoolDocumentId, Pageable pageable);
+
+    Page<Document> findByCategoryIdAndSchoolDocumentIdOrderByCreatedAtDesc(Long categoryId, Long schoolDocumentId, Pageable pageable);
+
+    List<Document> findByCategoryIdOrderByTitleAsc(Long categoryId);
+
+    boolean existsBySchoolDocumentId(Long schoolDocumentId);
 
     // 조회수 원자 증가 쿼리
     @Modifying(flushAutomatically = true)
@@ -59,6 +68,40 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             """)
     Page<Document> searchByCategoryAndKeyword(
             @Param("categoryId") Long categoryId,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
+
+    @Query("""
+            select d
+            from Document d
+            where d.schoolDocument.id = :schoolDocumentId
+              and (
+                  lower(d.title) like lower(concat('%', :keyword, '%'))
+                or lower(d.summary) like lower(concat('%', :keyword, '%'))
+              )
+            order by d.createdAt desc
+            """)
+    Page<Document> searchBySchoolAndKeyword(
+            @Param("schoolDocumentId") Long schoolDocumentId,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
+
+    @Query("""
+            select d
+            from Document d
+            where d.category.id = :categoryId
+              and d.schoolDocument.id = :schoolDocumentId
+              and (
+                  lower(d.title) like lower(concat('%', :keyword, '%'))
+                or lower(d.summary) like lower(concat('%', :keyword, '%'))
+              )
+            order by d.createdAt desc
+            """)
+    Page<Document> searchByCategoryAndSchoolAndKeyword(
+            @Param("categoryId") Long categoryId,
+            @Param("schoolDocumentId") Long schoolDocumentId,
             @Param("keyword") String keyword,
             Pageable pageable
     );

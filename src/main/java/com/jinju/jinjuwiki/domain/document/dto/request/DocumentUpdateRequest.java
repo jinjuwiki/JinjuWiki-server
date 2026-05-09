@@ -24,6 +24,8 @@ public record DocumentUpdateRequest(
         @NotNull(message = "카테고리 ID는 필수입니다.")
         Long categoryId,
 
+        Long schoolDocumentId,
+
         Integer eventYear,
 
         @NotNull(message = "본문 JSON은 비어 있을 수 없습니다.")

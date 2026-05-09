@@ -7,17 +7,19 @@ import java.util.List;
 public record CategoryResponse(
         @Schema(description = "카테고리 ID", example = "1")
         Long categoryId,
+        @Schema(description = "학교 문서 ID", example = "101", nullable = true)
+        Long schoolDocumentId,
         @Schema(description = "카테고리 이름", example = "역사")
         String name,
         @Schema(description = "하위 카테고리 목록")
         List<CategoryResponse> children
 ) {
 
-    public static CategoryResponse leaf(Long categoryId, String name) {
-        return new CategoryResponse(categoryId, name, List.of());
+    public static CategoryResponse leaf(Long categoryId, Long schoolDocumentId, String name) {
+        return new CategoryResponse(categoryId, schoolDocumentId, name, List.of());
     }
 
-    public static CategoryResponse parent(Long categoryId, String name, List<CategoryResponse> children) {
-        return new CategoryResponse(categoryId, name, children);
+    public static CategoryResponse parent(Long categoryId, Long schoolDocumentId, String name, List<CategoryResponse> children) {
+        return new CategoryResponse(categoryId, schoolDocumentId, name, children);
     }
 }
