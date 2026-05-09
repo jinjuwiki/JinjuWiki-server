@@ -4,6 +4,8 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
+  flyway:
+    enabled: false
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -17,6 +19,10 @@ jwt:
   access-token-expiration: 3600000
 
 app:
+  security:
+    swagger-public-enabled: true
+    cors:
+      allowed-origin-patterns: http://localhost:*,http://127.0.0.1:*
   auth:
     email-verification-expiration-minutes: 5
   upload:
