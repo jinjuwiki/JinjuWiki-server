@@ -1,3 +1,7 @@
+server:
+  # ngrok 프록시 헤더 반영 설정
+  forward-headers-strategy: framework
+
 spring:
   docker:
     compose:

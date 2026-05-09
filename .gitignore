@@ -41,3 +41,6 @@ out/
 .env
 .env.*
 !.env.example
+
+# Client upload file storage directory
+uploads/
