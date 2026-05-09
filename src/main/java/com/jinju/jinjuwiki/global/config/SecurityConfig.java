@@ -41,6 +41,8 @@ public class SecurityConfig {
     private static final String SEARCH_TRENDING_PATH = "/api/search/trending";
     private static final String UPLOAD_IMAGE_PATH = "/api/uploads/images";
     private static final String UPLOAD_IMAGE_RESOURCE_PATH = "/uploads/images/**";
+    private static final String ACTUATOR_HEALTH_PATH = "/actuator/health";
+    private static final String ACTUATOR_HEALTH_PATH_WILDCARD = "/actuator/health/**";
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -70,6 +72,7 @@ public class SecurityConfig {
                     ).permitAll();
                     auth.requestMatchers(HttpMethod.GET, CATEGORY_LIST_PATH).permitAll();
                     auth.requestMatchers(HttpMethod.GET, UPLOAD_IMAGE_RESOURCE_PATH).permitAll();
+                    auth.requestMatchers(HttpMethod.GET, ACTUATOR_HEALTH_PATH, ACTUATOR_HEALTH_PATH_WILDCARD).permitAll();
                     if (swaggerPublicEnabled) {
                         auth.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll();
                     }
