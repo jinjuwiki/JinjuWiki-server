@@ -215,7 +215,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (!passwordResetToken.getToken().equals(request.code())) {
             long failureCount = redisPasswordResetVerifyAttemptLimiter.recordFailure(request.email());
-            if (failureCount >= 5L) {
+            if (redisPasswordResetVerifyAttemptLimiter.hasReachedLimit(failureCount)) {
                 throw new BusinessException(ErrorCode.PASSWORD_RESET_VERIFY_ATTEMPT_EXCEEDED);
             }
             throw new BusinessException(ErrorCode.PASSWORD_RESET_CODE_MISMATCH);
@@ -313,33 +313,23 @@ public class AuthServiceImpl implements AuthService {
 
     // 로그인 시도 제한 예외 변환 메서드
     private void validateLoginAllowed(String email) {
-        try {
-            redisLoginAttemptLimiter.validateAllowed(email);
-        } catch (BusinessException exception) {
-            if (exception.getErrorCode() == ErrorCode.INVALID_INPUT) {
-                throw new BusinessException(ErrorCode.LOGIN_ATTEMPT_EXCEEDED);
-            }
-            throw exception;
+        if (!redisLoginAttemptLimiter.isAllowed(email)) {
+            throw new BusinessException(ErrorCode.LOGIN_ATTEMPT_EXCEEDED);
         }
     }
 
     // 로그인 실패 누적 메서드
     private void recordLoginFailure(String email) {
         long failureCount = redisLoginAttemptLimiter.recordFailure(email);
-        if (failureCount >= 5L) {
+        if (redisLoginAttemptLimiter.hasReachedLimit(failureCount)) {
             throw new BusinessException(ErrorCode.LOGIN_ATTEMPT_EXCEEDED);
         }
     }
 
     // 비밀번호 재설정 인증코드 검증 제한 예외 변환 메서드
     private void validatePasswordResetVerifyAllowed(String email) {
-        try {
-            redisPasswordResetVerifyAttemptLimiter.validateAllowed(email);
-        } catch (BusinessException exception) {
-            if (exception.getErrorCode() == ErrorCode.INVALID_INPUT) {
-                throw new BusinessException(ErrorCode.PASSWORD_RESET_VERIFY_ATTEMPT_EXCEEDED);
-            }
-            throw exception;
+        if (!redisPasswordResetVerifyAttemptLimiter.isAllowed(email)) {
+            throw new BusinessException(ErrorCode.PASSWORD_RESET_VERIFY_ATTEMPT_EXCEEDED);
         }
     }
 }

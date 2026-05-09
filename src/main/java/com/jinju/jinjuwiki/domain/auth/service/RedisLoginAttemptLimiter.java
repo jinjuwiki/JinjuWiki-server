@@ -1,7 +1,5 @@
 package com.jinju.jinjuwiki.domain.auth.service;
 
-import com.jinju.jinjuwiki.global.error.BusinessException;
-import com.jinju.jinjuwiki.global.error.ErrorCode;
 import java.time.Duration;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -27,15 +25,13 @@ public class RedisLoginAttemptLimiter {
     private long loginFailureWindowSeconds;
 
     // 로그인 가능 여부 확인 메서드
-    public void validateAllowed(String email) {
+    public boolean isAllowed(String email) {
         String failureCount = stringRedisTemplate.opsForValue().get(createRedisKey(email));
         if (failureCount == null) {
-            return;
+            return true;
         }
 
-        if (Long.parseLong(failureCount) >= loginFailureLimitCount) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
-        }
+        return Long.parseLong(failureCount) < loginFailureLimitCount;
     }
 
     // 로그인 실패 누적 메서드
@@ -47,7 +43,7 @@ public class RedisLoginAttemptLimiter {
         );
 
         if (currentCount == null) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT);
+            throw new IllegalStateException("로그인 실패 횟수 누적에 실패했습니다.");
         }
 
         return currentCount;
@@ -64,6 +60,11 @@ public class RedisLoginAttemptLimiter {
 
     private Duration getLoginFailureWindow() {
         return Duration.ofSeconds(loginFailureWindowSeconds);
+    }
+
+    // 로그인 실패 제한 도달 여부 확인 메서드
+    public boolean hasReachedLimit(long failureCount) {
+        return failureCount >= loginFailureLimitCount;
     }
 
     private static DefaultRedisScript<Long> createIncrementWithTtlScript() {
