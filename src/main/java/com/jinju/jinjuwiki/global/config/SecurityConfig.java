@@ -2,8 +2,10 @@ package com.jinju.jinjuwiki.global.config;
 
 import com.jinju.jinjuwiki.global.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -42,6 +44,12 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    @Value("${app.security.swagger-public-enabled}")
+    private boolean swaggerPublicEnabled;
+
+    @Value("${app.security.cors.allowed-origin-patterns}")
+    private String allowedOriginPatterns;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -50,34 +58,35 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, AUTH_EMAIL_SEND_PATH, AUTH_EMAIL_VERIFY_PATH).permitAll()
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                AUTH_SIGNUP_PATH,
-                                AUTH_LOGIN_PATH,
-                                AUTH_PASSWORD_RESET_REQUEST_PATH,
-                                AUTH_PASSWORD_RESET_VERIFY_PATH,
-                                AUTH_PASSWORD_RESET_CONFIRM_PATH
-                        )
-                        .permitAll()
-                        .requestMatchers(HttpMethod.GET, CATEGORY_LIST_PATH).permitAll()
-                        .requestMatchers(HttpMethod.GET, UPLOAD_IMAGE_RESOURCE_PATH).permitAll()
-                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/error").permitAll()
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                DOCUMENT_LIST_PATH,
-                                DOCUMENT_SEARCH_PATH,
-                                DOCUMENT_DETAIL_PATH,
-                                SEARCH_TRENDING_PATH
-                        ).permitAll()
-                        .requestMatchers(HttpMethod.POST, UPLOAD_IMAGE_PATH).authenticated()
-                        .requestMatchers(HttpMethod.POST, DOCUMENT_LIST_PATH).authenticated()
-                        .requestMatchers(HttpMethod.PUT, DOCUMENT_DETAIL_PATH).authenticated()
-                        .requestMatchers(HttpMethod.DELETE, DOCUMENT_DETAIL_PATH).authenticated()
-                        .anyRequest().authenticated()
-                )
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers(HttpMethod.POST, AUTH_EMAIL_SEND_PATH, AUTH_EMAIL_VERIFY_PATH).permitAll();
+                    auth.requestMatchers(
+                            HttpMethod.POST,
+                            AUTH_SIGNUP_PATH,
+                            AUTH_LOGIN_PATH,
+                            AUTH_PASSWORD_RESET_REQUEST_PATH,
+                            AUTH_PASSWORD_RESET_VERIFY_PATH,
+                            AUTH_PASSWORD_RESET_CONFIRM_PATH
+                    ).permitAll();
+                    auth.requestMatchers(HttpMethod.GET, CATEGORY_LIST_PATH).permitAll();
+                    auth.requestMatchers(HttpMethod.GET, UPLOAD_IMAGE_RESOURCE_PATH).permitAll();
+                    if (swaggerPublicEnabled) {
+                        auth.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll();
+                    }
+                    auth.requestMatchers("/error").permitAll();
+                    auth.requestMatchers(
+                            HttpMethod.GET,
+                            DOCUMENT_LIST_PATH,
+                            DOCUMENT_SEARCH_PATH,
+                            DOCUMENT_DETAIL_PATH,
+                            SEARCH_TRENDING_PATH
+                    ).permitAll();
+                    auth.requestMatchers(HttpMethod.POST, UPLOAD_IMAGE_PATH).authenticated();
+                    auth.requestMatchers(HttpMethod.POST, DOCUMENT_LIST_PATH).authenticated();
+                    auth.requestMatchers(HttpMethod.PUT, DOCUMENT_DETAIL_PATH).authenticated();
+                    auth.requestMatchers(HttpMethod.DELETE, DOCUMENT_DETAIL_PATH).authenticated();
+                    auth.anyRequest().authenticated();
+                })
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) ->
                                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED))
@@ -97,12 +106,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:*",
-                "http://127.0.0.1:*",
-                "https://*.ngrok-free.app",
-                "https://*.ngrok.io"
-        ));
+        configuration.setAllowedOriginPatterns(parseAllowedOriginPatterns());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
@@ -111,5 +115,12 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private List<String> parseAllowedOriginPatterns() {
+        return Arrays.stream(allowedOriginPatterns.split(","))
+                .map(String::trim)
+                .filter(pattern -> !pattern.isBlank())
+                .toList();
     }
 }

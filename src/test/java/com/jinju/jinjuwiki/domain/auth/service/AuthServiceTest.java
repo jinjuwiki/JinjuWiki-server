@@ -63,6 +63,12 @@ class AuthServiceTest {
     private RedisPasswordResetRequestRateLimiter redisPasswordResetRequestRateLimiter;
 
     @Mock
+    private RedisLoginAttemptLimiter redisLoginAttemptLimiter;
+
+    @Mock
+    private RedisPasswordResetVerifyAttemptLimiter redisPasswordResetVerifyAttemptLimiter;
+
+    @Mock
     private EmailSender emailSender;
 
     @Mock
@@ -168,6 +174,7 @@ class AuthServiceTest {
                 .nickname("loginUser")
                 .role(UserRole.USER)
                 .build();
+        when(redisLoginAttemptLimiter.isAllowed("login@test.com")).thenReturn(true);
         when(userRepository.findByEmail("login@test.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password123", "encoded-password")).thenReturn(true);
         when(jwtTokenProvider.createAccessToken(any(UserPrincipal.class))).thenReturn("access-token");
@@ -183,6 +190,8 @@ class AuthServiceTest {
         assertThat(response.role()).isEqualTo("USER");
         verify(userRepository).findByEmail("login@test.com");
         verify(passwordEncoder).matches("password123", "encoded-password");
+        verify(redisLoginAttemptLimiter).isAllowed("login@test.com");
+        verify(redisLoginAttemptLimiter).reset("login@test.com");
     }
 
     @Test
@@ -195,6 +204,7 @@ class AuthServiceTest {
                 .nickname("wrongUser")
                 .role(UserRole.USER)
                 .build();
+        when(redisLoginAttemptLimiter.isAllowed("wrong@test.com")).thenReturn(true);
         when(userRepository.findByEmail("wrong@test.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("bad-password", "encoded-password")).thenReturn(false);
 
@@ -206,8 +216,27 @@ class AuthServiceTest {
 
         // then
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_LOGIN);
+        verify(redisLoginAttemptLimiter).isAllowed("wrong@test.com");
+        verify(redisLoginAttemptLimiter).recordFailure("wrong@test.com");
         verify(userRepository).findByEmail("wrong@test.com");
         verify(passwordEncoder).matches("bad-password", "encoded-password");
+    }
+
+    @Test
+    @DisplayName("로그인 시도 제한을 넘으면 전용 예외가 발생한다.")
+    void loginFailWhenAttemptLimitExceeded() {
+        // given
+        when(redisLoginAttemptLimiter.isAllowed("blocked@test.com")).thenReturn(false);
+
+        // when
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> authService.login(new LoginRequest("blocked@test.com", "password123"))
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.LOGIN_ATTEMPT_EXCEEDED);
+        verify(redisLoginAttemptLimiter).isAllowed("blocked@test.com");
     }
 
     @Test
@@ -314,6 +343,7 @@ class AuthServiceTest {
                 .token("123456")
                 .expiresAt(LocalDateTime.now().plusMinutes(5))
                 .build();
+        when(redisPasswordResetVerifyAttemptLimiter.isAllowed("reset@test.com")).thenReturn(true);
         when(passwordResetTokenRepository.findByEmail("reset@test.com")).thenReturn(Optional.of(passwordResetToken));
         ReflectionTestUtils.setField(authService, "passwordResetExpirationMinutes", 30L);
 
@@ -328,7 +358,54 @@ class AuthServiceTest {
         assertThat(passwordResetToken.getResetToken()).isEqualTo(response.resetToken());
         assertThat(passwordResetToken.getVerifiedAt()).isEqualTo(response.verifiedAt());
         assertThat(passwordResetToken.getResetTokenExpiresAt()).isEqualTo(response.expiresAt());
+        verify(redisPasswordResetVerifyAttemptLimiter).isAllowed("reset@test.com");
+        verify(redisPasswordResetVerifyAttemptLimiter).reset("reset@test.com");
         verify(passwordResetTokenRepository).findByEmail("reset@test.com");
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 인증코드가 틀리면 실패 횟수를 누적한다.")
+    void verifyPasswordResetCodeFailWhenCodeMismatch() {
+        // given
+        PasswordResetVerifyRequest request = new PasswordResetVerifyRequest("reset@test.com", "000000");
+        PasswordResetToken passwordResetToken = PasswordResetToken.builder()
+                .email("reset@test.com")
+                .token("123456")
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .build();
+        when(redisPasswordResetVerifyAttemptLimiter.isAllowed("reset@test.com")).thenReturn(true);
+        when(passwordResetTokenRepository.findByEmail("reset@test.com")).thenReturn(Optional.of(passwordResetToken));
+        when(redisPasswordResetVerifyAttemptLimiter.recordFailure("reset@test.com")).thenReturn(1L);
+
+        // when
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> authService.verifyPasswordResetCode(request)
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PASSWORD_RESET_CODE_MISMATCH);
+        verify(redisPasswordResetVerifyAttemptLimiter).isAllowed("reset@test.com");
+        verify(redisPasswordResetVerifyAttemptLimiter).recordFailure("reset@test.com");
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 인증코드 확인 제한을 넘으면 전용 예외가 발생한다.")
+    void verifyPasswordResetCodeFailWhenAttemptLimitExceeded() {
+        // given
+        when(redisPasswordResetVerifyAttemptLimiter.isAllowed("blocked-reset@test.com")).thenReturn(false);
+
+        // when
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> authService.verifyPasswordResetCode(
+                        new PasswordResetVerifyRequest("blocked-reset@test.com", "123456")
+                )
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PASSWORD_RESET_VERIFY_ATTEMPT_EXCEEDED);
+        verify(redisPasswordResetVerifyAttemptLimiter).isAllowed("blocked-reset@test.com");
     }
 
     @Test
