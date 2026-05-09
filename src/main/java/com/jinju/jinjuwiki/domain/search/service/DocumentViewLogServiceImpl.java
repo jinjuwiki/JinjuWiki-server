@@ -2,11 +2,13 @@ package com.jinju.jinjuwiki.domain.search.service;
 
 import com.jinju.jinjuwiki.domain.document.entity.Document;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 // 문서 조회 로그 저장 서비스 구현체
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class DocumentViewLogServiceImpl implements DocumentViewLogService {
 
@@ -20,8 +22,7 @@ public class DocumentViewLogServiceImpl implements DocumentViewLogService {
             return false;
         }
 
-        // 급상승 집계 Redis 반영 호출
-        redisTrendingDocumentViewBuffer.incrementCurrentHourScore(document.getId());
+        recordTrendingDocumentView(document);
         return true;
     }
 
@@ -42,5 +43,15 @@ public class DocumentViewLogServiceImpl implements DocumentViewLogService {
     // 비로그인 조회 IP 공백 여부 확인 메서드
     private boolean isBlankIp(String viewerIp) {
         return viewerIp == null || viewerIp.isBlank();
+    }
+
+    // 급상승 집계 Redis 반영 메서드
+    private void recordTrendingDocumentView(Document document) {
+        try {
+            redisTrendingDocumentViewBuffer.incrementCurrentHourScore(document.getId());
+        } catch (RuntimeException exception) {
+            // 급상승 집계 실패가 문서 조회 성공을 막지 않도록 한다.
+            log.warn("급상승 문서 집계 반영 실패, documentId={}", document.getId(), exception);
+        }
     }
 }

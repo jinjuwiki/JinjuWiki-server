@@ -23,6 +23,7 @@ import com.jinju.jinjuwiki.global.error.ErrorCode;
 import com.jinju.jinjuwiki.global.response.PageResponse;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class DocumentServiceImpl implements DocumentService {
 
@@ -236,7 +238,12 @@ public class DocumentServiceImpl implements DocumentService {
 
     // 조회수 Redis 누적 반영 메서드
     private void bufferDocumentViewCount(Document document) {
-        redisDocumentViewCountBuffer.increment(document.getId());
-        document.increaseViewCount();
+        try {
+            redisDocumentViewCountBuffer.increment(document.getId());
+            document.increaseViewCount();
+        } catch (RuntimeException exception) {
+            // Redis 장애가 발생해도 문서 본문 조회는 성공시킨다.
+            log.warn("문서 조회수 버퍼 반영 실패, documentId={}", document.getId(), exception);
+        }
     }
 }
