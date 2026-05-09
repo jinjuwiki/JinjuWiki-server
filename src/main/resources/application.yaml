@@ -1,9 +1,6 @@
 spring:
   application:
     name: JinjuWiki
-  docker:
-    compose:
-      enabled: true
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:jinjuwiki}
     username: ${DB_USERNAME}
@@ -15,8 +12,6 @@ spring:
       password: ${REDIS_PASSWORD:}
       timeout: 2s
   jpa:
-    hibernate:
-      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
@@ -34,15 +29,15 @@ spring:
           starttls:
             enable: true
 
-logging:
-  level:
-    org.hibernate.SQL: debug
-
 jwt:
   secret: ${JWT_SECRET}
   access-token-expiration: 3600000
 
 app:
+  security:
+    swagger-public-enabled: true
+    cors:
+      allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*,https://*.ngrok-free.app,https://*.ngrok.io}
   auth:
     email-verification-expiration-minutes: 5
     email-verification-send-rate-limit:

@@ -1,0 +1,27 @@
+server:
+  forward-headers-strategy: framework
+
+spring:
+  docker:
+    compose:
+      enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+logging:
+  level:
+    org.hibernate.SQL: off
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+app:
+  security:
+    swagger-public-enabled: false
+    cors:
+      allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS}
