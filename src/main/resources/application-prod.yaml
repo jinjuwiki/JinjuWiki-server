@@ -24,4 +24,4 @@ app:
   security:
     swagger-public-enabled: false
     cors:
-      allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS}
+      allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:}

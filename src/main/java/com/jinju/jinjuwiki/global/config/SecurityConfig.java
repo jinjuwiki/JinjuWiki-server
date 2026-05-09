@@ -44,10 +44,10 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Value("${app.security.swagger-public-enabled:true}")
+    @Value("${app.security.swagger-public-enabled}")
     private boolean swaggerPublicEnabled;
 
-    @Value("${app.security.cors.allowed-origin-patterns:http://localhost:*,http://127.0.0.1:*,https://*.ngrok-free.app,https://*.ngrok.io}")
+    @Value("${app.security.cors.allowed-origin-patterns}")
     private String allowedOriginPatterns;
 
     @Bean
