@@ -26,7 +26,10 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @GetMapping
-    @Operation(summary = "카테고리 목록 조회", description = "문서 작성과 탐색에 사용하는 카테고리 목록을 조회합니다.")
+    @Operation(
+            summary = "카테고리 목록 조회",
+            description = "학교 카테고리 문서를 상위 노드로 사용하는 카테고리 트리를 조회합니다. 학교 문서 아래에는 학생, 선생님, 사건사고 하위 카테고리가 반복되며 기타 카테고리는 최상위에 그대로 노출됩니다."
+    )
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",

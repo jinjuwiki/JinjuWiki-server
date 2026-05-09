@@ -11,6 +11,7 @@ import com.jinju.jinjuwiki.global.response.ApiResponse;
 import com.jinju.jinjuwiki.global.response.PageResponse;
 import com.jinju.jinjuwiki.global.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -110,7 +111,7 @@ public class DocumentController {
     }
 
     @GetMapping
-    @Operation(summary = "문서 목록 조회", description = "카테고리별 문서 목록을 페이지 단위로 조회합니다.")
+    @Operation(summary = "문서 목록 조회", description = "카테고리와 학교 문서 조건으로 문서 목록을 페이지 단위로 조회합니다.")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -130,7 +131,9 @@ public class DocumentController {
     })
     // 문서 목록 조회 응답 코드 명세
     public ResponseEntity<ApiResponse<PageResponse<DocumentSummaryResponse>>> getDocuments(
+            @Parameter(description = "카테고리 ID 필터")
             @RequestParam(required = false) Long categoryId, // 카테고리 필터
+            @Parameter(description = "학교 상위 문서 ID 필터. 학생/선생님/사건사고 문서 조회 시 함께 사용합니다.")
             @RequestParam(required = false) Long schoolDocumentId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
@@ -140,7 +143,7 @@ public class DocumentController {
     }
 
     @GetMapping("/search")
-    @Operation(summary = "문서 검색", description = "키워드와 카테고리 조건으로 문서를 검색합니다.")
+    @Operation(summary = "문서 검색", description = "키워드와 카테고리, 학교 문서 조건으로 문서를 검색합니다.")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -160,8 +163,11 @@ public class DocumentController {
     })
     // 문서 검색 응답 코드 명세
     public ResponseEntity<ApiResponse<PageResponse<DocumentSummaryResponse>>> searchDocuments(
+            @Parameter(description = "검색 키워드")
             @RequestParam String keyword,
+            @Parameter(description = "카테고리 ID 필터")
             @RequestParam(required = false) Long categoryId,
+            @Parameter(description = "학교 상위 문서 ID 필터. 학교 범위 검색 시 사용합니다.")
             @RequestParam(required = false) Long schoolDocumentId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
