@@ -48,6 +48,12 @@ class EmailVerificationServiceTest {
     private RedisEmailVerificationVerifyAttemptLimiter redisEmailVerificationVerifyAttemptLimiter;
 
     @Mock
+    private RedisLoginAttemptLimiter redisLoginAttemptLimiter;
+
+    @Mock
+    private RedisPasswordResetVerifyAttemptLimiter redisPasswordResetVerifyAttemptLimiter;
+
+    @Mock
     private EmailSender emailSender;
 
     @Mock

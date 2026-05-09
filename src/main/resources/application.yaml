@@ -46,7 +46,13 @@ app:
     email-verification-verify-attempt-limit:
       count: 5
       window-seconds: 300
+    login-attempt-limit:
+      count: 5
+      window-seconds: 300
     password-reset-request-rate-limit:
+      count: 5
+      window-seconds: 300
+    password-reset-verify-attempt-limit:
       count: 5
       window-seconds: 300
   mail:

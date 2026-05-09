@@ -47,6 +47,8 @@ public class AuthServiceImpl implements AuthService {
     private final RedisEmailVerificationSendRateLimiter redisEmailVerificationSendRateLimiter;
     private final RedisPasswordResetRequestRateLimiter redisPasswordResetRequestRateLimiter;
     private final RedisEmailVerificationVerifyAttemptLimiter redisEmailVerificationVerifyAttemptLimiter;
+    private final RedisLoginAttemptLimiter redisLoginAttemptLimiter;
+    private final RedisPasswordResetVerifyAttemptLimiter redisPasswordResetVerifyAttemptLimiter;
     private final EmailSender emailSender;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -137,14 +139,21 @@ public class AuthServiceImpl implements AuthService {
     @Override
     // 로그인 로직
     public LoginResponse login(LoginRequest request) {
+        validateLoginAllowed(request.email());
+
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_LOGIN));
+                .orElseThrow(() -> {
+                    recordLoginFailure(request.email());
+                    return new BusinessException(ErrorCode.INVALID_LOGIN);
+                });
 
         // 평문 비교 X
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            recordLoginFailure(request.email());
             throw new BusinessException(ErrorCode.INVALID_LOGIN); // 에러 통일
         }
 
+        redisLoginAttemptLimiter.reset(request.email());
         String accessToken = jwtTokenProvider.createAccessToken(UserPrincipal.from(user));
 
         return new LoginResponse(
@@ -194,6 +203,8 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     // 비밀번호 재설정 인증코드 확인 로직
     public PasswordResetVerifyResponse verifyPasswordResetCode(PasswordResetVerifyRequest request) {
+        validatePasswordResetVerifyAllowed(request.email());
+
         PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PASSWORD_RESET_NOT_FOUND));
 
@@ -203,12 +214,17 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!passwordResetToken.getToken().equals(request.code())) {
+            long failureCount = redisPasswordResetVerifyAttemptLimiter.recordFailure(request.email());
+            if (failureCount >= 5L) {
+                throw new BusinessException(ErrorCode.PASSWORD_RESET_VERIFY_ATTEMPT_EXCEEDED);
+            }
             throw new BusinessException(ErrorCode.PASSWORD_RESET_CODE_MISMATCH);
         }
 
         String resetToken = generatePasswordResetToken();
         LocalDateTime resetTokenExpiresAt = now.plusMinutes(passwordResetExpirationMinutes);
         passwordResetToken.verify(resetToken, now, resetTokenExpiresAt);
+        redisPasswordResetVerifyAttemptLimiter.reset(request.email());
 
         return new PasswordResetVerifyResponse(
                 resetToken,
@@ -290,6 +306,38 @@ public class AuthServiceImpl implements AuthService {
         } catch (BusinessException exception) {
             if (exception.getErrorCode() == ErrorCode.INVALID_INPUT) {
                 throw new BusinessException(ErrorCode.EMAIL_VERIFICATION_ATTEMPT_EXCEEDED);
+            }
+            throw exception;
+        }
+    }
+
+    // 로그인 시도 제한 예외 변환 메서드
+    private void validateLoginAllowed(String email) {
+        try {
+            redisLoginAttemptLimiter.validateAllowed(email);
+        } catch (BusinessException exception) {
+            if (exception.getErrorCode() == ErrorCode.INVALID_INPUT) {
+                throw new BusinessException(ErrorCode.LOGIN_ATTEMPT_EXCEEDED);
+            }
+            throw exception;
+        }
+    }
+
+    // 로그인 실패 누적 메서드
+    private void recordLoginFailure(String email) {
+        long failureCount = redisLoginAttemptLimiter.recordFailure(email);
+        if (failureCount >= 5L) {
+            throw new BusinessException(ErrorCode.LOGIN_ATTEMPT_EXCEEDED);
+        }
+    }
+
+    // 비밀번호 재설정 인증코드 검증 제한 예외 변환 메서드
+    private void validatePasswordResetVerifyAllowed(String email) {
+        try {
+            redisPasswordResetVerifyAttemptLimiter.validateAllowed(email);
+        } catch (BusinessException exception) {
+            if (exception.getErrorCode() == ErrorCode.INVALID_INPUT) {
+                throw new BusinessException(ErrorCode.PASSWORD_RESET_VERIFY_ATTEMPT_EXCEEDED);
             }
             throw exception;
         }

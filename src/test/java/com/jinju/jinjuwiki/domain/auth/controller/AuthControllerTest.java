@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationVerifyRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.EmailVerificationSendRequest;
+import com.jinju.jinjuwiki.domain.auth.dto.request.LoginRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetConfirmRequest;
 import com.jinju.jinjuwiki.domain.auth.dto.request.PasswordResetVerifyRequest;
@@ -114,6 +115,27 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("로그인 시도 제한 초과 시 429와 전용 에러 코드를 반환한다.")
+    void loginRateLimited() throws Exception {
+        // given
+        LoginRequest request = new LoginRequest("login@test.com", "password123");
+        doThrow(new BusinessException(ErrorCode.LOGIN_ATTEMPT_EXCEEDED))
+                .when(authService)
+                .login(request);
+
+        // when & then
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("LOGIN_ATTEMPT_EXCEEDED"))
+                .andExpect(jsonPath("$.message").value("로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요."))
+                .andExpect(jsonPath("$.path").value("/api/auth/login"));
+
+        verify(authService).login(request);
+    }
+
+    @Test
     @DisplayName("비밀번호 재설정 인증코드 확인에 성공하면 reset token을 반환한다.")
     void verifyPasswordResetCodeSuccess() throws Exception {
         // given
@@ -134,6 +156,27 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.resetToken").value("password-reset-token"))
                 .andExpect(jsonPath("$.data.verifiedAt").value("2026-04-13T16:05:00"))
                 .andExpect(jsonPath("$.data.expiresAt").value("2026-04-13T16:15:00"));
+
+        verify(authService).verifyPasswordResetCode(request);
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 인증코드 확인 제한 초과 시 429와 전용 에러 코드를 반환한다.")
+    void verifyPasswordResetCodeRateLimited() throws Exception {
+        // given
+        PasswordResetVerifyRequest request = new PasswordResetVerifyRequest("reset@test.com", "123456");
+        doThrow(new BusinessException(ErrorCode.PASSWORD_RESET_VERIFY_ATTEMPT_EXCEEDED))
+                .when(authService)
+                .verifyPasswordResetCode(request);
+
+        // when & then
+        mockMvc.perform(post("/api/auth/password/reset/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("PASSWORD_RESET_VERIFY_ATTEMPT_EXCEEDED"))
+                .andExpect(jsonPath("$.message").value("비밀번호 재설정 인증코드 확인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요."))
+                .andExpect(jsonPath("$.path").value("/api/auth/password/reset/verify"));
 
         verify(authService).verifyPasswordResetCode(request);
     }
