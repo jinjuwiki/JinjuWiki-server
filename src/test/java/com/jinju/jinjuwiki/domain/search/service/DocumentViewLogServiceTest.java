@@ -1,5 +1,6 @@
 package com.jinju.jinjuwiki.domain.search.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -101,6 +102,24 @@ class DocumentViewLogServiceTest {
         documentViewLogService.save(document, 2L, null);
 
         // then
+        verify(redisDocumentViewLimiter).isAllowed(1L, 2L, null);
+        verify(redisTrendingDocumentViewBuffer).incrementCurrentHourScore(1L);
+    }
+
+    @Test
+    @DisplayName("급상승 집계 Redis 장애가 발생해도 문서 조회 로그 저장은 성공 처리한다.")
+    void saveViewLogSuccessWhenTrendingBufferFails() {
+        // given
+        Document document = createDocument(1L, "급상승 문서");
+        when(redisDocumentViewLimiter.isAllowed(1L, 2L, null)).thenReturn(true);
+        when(redisTrendingDocumentViewBuffer.incrementCurrentHourScore(1L))
+                .thenThrow(new RuntimeException("redis unavailable"));
+
+        // when
+        boolean saved = documentViewLogService.save(document, 2L, null);
+
+        // then
+        assertThat(saved).isTrue();
         verify(redisDocumentViewLimiter).isAllowed(1L, 2L, null);
         verify(redisTrendingDocumentViewBuffer).incrementCurrentHourScore(1L);
     }

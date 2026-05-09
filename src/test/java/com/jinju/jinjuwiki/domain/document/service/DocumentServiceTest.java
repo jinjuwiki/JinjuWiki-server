@@ -169,6 +169,36 @@ class DocumentServiceTest {
     }
 
     @Test
+    @DisplayName("조회수 버퍼 반영이 실패해도 문서 상세 조회는 성공한다.")
+    void getDocumentSuccessWhenViewCountBufferFails() {
+        // given
+        Document document = Document.builder()
+                .title("수학 공부법")
+                .content(DocumentContentJsonCodec.writeValue(createContentJson()))
+                .summary("시험 대비 요약")
+                .eventYear(2024)
+                .contentJson(DocumentContentJsonCodec.writeValue(createContentJson()))
+                .author(createUser(2L, "doc2@test.com", "docUser2"))
+                .category(createCategory(20L, "학생"))
+                .build();
+        ReflectionTestUtils.setField(document, "id", 200L);
+
+        when(documentDomainService.getDocument(200L)).thenReturn(document);
+        when(documentViewLogService.save(document, 2L, null)).thenReturn(true);
+        when(redisDocumentViewCountBuffer.increment(200L)).thenThrow(new IllegalStateException("redis unavailable"));
+
+        // when
+        DocumentDetailResponse response = documentService.getDocument(200L, 2L, "127.0.0.1");
+
+        // then
+        assertThat(response.documentId()).isEqualTo(200L);
+        assertThat(response.viewCount()).isEqualTo(0L);
+        verify(documentDomainService).getDocument(200L);
+        verify(documentViewLogService).save(document, 2L, null);
+        verify(redisDocumentViewCountBuffer).increment(200L);
+    }
+
+    @Test
     @DisplayName("문서 목록은 최신순으로 페이지 조회할 수 있다.")
     void getDocumentsSuccess() {
         // given
