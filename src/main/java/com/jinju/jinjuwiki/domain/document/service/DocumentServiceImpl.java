@@ -78,11 +78,13 @@ public class DocumentServiceImpl implements DocumentService {
     // 문서 상세 응답 조립 메서드
     public DocumentDetailResponse getDocument(Long id, Long viewerUserId, String viewerIp) {
         Document document = documentDomainService.getDocument(id);
+        long responseViewCount = document.getViewCount();
 
         if (recordDocumentView(document, viewerUserId, viewerIp)) {
+            responseViewCount++;
             bufferDocumentViewCount(document);
         }
-        return DocumentDetailResponseMapper.toResponse(document);
+        return DocumentDetailResponseMapper.toResponse(document, responseViewCount);
     }
 
     @Override
@@ -240,7 +242,6 @@ public class DocumentServiceImpl implements DocumentService {
     private void bufferDocumentViewCount(Document document) {
         try {
             redisDocumentViewCountBuffer.increment(document.getId());
-            document.increaseViewCount();
         } catch (RuntimeException exception) {
             // Redis 장애가 발생해도 문서 본문 조회는 성공시킨다.
             log.warn("문서 조회수 버퍼 반영 실패, documentId={}", document.getId(), exception);

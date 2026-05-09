@@ -10,6 +10,11 @@ public class DocumentDetailResponseMapper {
 
     // 문서 엔티티를 상세 응답 DTO로 변환
     public static DocumentDetailResponse toResponse(Document document) {
+        return toResponse(document, document.getViewCount());
+    }
+
+    // 문서 엔티티를 상세 응답 DTO로 변환
+    public static DocumentDetailResponse toResponse(Document document, long viewCount) {
         return new DocumentDetailResponse(
                 document.getId(),
                 document.getTitle(),
@@ -22,7 +27,7 @@ public class DocumentDetailResponseMapper {
                 document.getAuthor().getId(),
                 document.getAuthor().getNickname(),
                 DocumentContentJsonCodec.readTree(document.getContentJson() == null ? document.getContent() : document.getContentJson()),
-                document.getViewCount(),
+                viewCount,
                 document.getCreatedAt(),
                 document.getUpdatedAt()
         );

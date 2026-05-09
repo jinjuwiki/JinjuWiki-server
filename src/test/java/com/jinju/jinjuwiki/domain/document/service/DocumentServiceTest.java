@@ -192,7 +192,7 @@ class DocumentServiceTest {
 
         // then
         assertThat(response.documentId()).isEqualTo(200L);
-        assertThat(response.viewCount()).isEqualTo(0L);
+        assertThat(response.viewCount()).isEqualTo(1L);
         verify(documentDomainService).getDocument(200L);
         verify(documentViewLogService).save(document, 2L, null);
         verify(redisDocumentViewCountBuffer).increment(200L);
