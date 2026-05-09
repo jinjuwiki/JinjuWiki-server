@@ -4,6 +4,8 @@ import com.jinju.jinjuwiki.domain.category.dto.response.CategoryResponse;
 import com.jinju.jinjuwiki.domain.category.entity.Category;
 import com.jinju.jinjuwiki.domain.category.entity.CategoryType;
 import com.jinju.jinjuwiki.domain.category.repository.CategoryRepository;
+import com.jinju.jinjuwiki.domain.document.entity.Document;
+import com.jinju.jinjuwiki.domain.document.repository.DocumentRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +26,7 @@ public class CategoryServiceImpl implements CategoryService {
     );
 
     private final CategoryRepository categoryRepository;
+    private final DocumentRepository documentRepository;
 
     @Override
     public List<CategoryResponse> getCategories() {
@@ -37,23 +40,28 @@ public class CategoryServiceImpl implements CategoryService {
         List<CategoryResponse> responses = new ArrayList<>();
 
         if (schoolCategory != null) {
-            List<CategoryResponse> schoolChildren = SCHOOL_CHILDREN.stream()
+            List<Document> schoolDocuments = documentRepository.findByCategoryIdOrderByTitleAsc(schoolCategory.getId());
+            List<Category> schoolChildren = SCHOOL_CHILDREN.stream()
                     .map(categoriesByName::get)
                     .filter(Objects::nonNull)
-                    .map(category -> CategoryResponse.leaf(category.getId(), category.getName()))
                     .toList();
 
-            responses.add(CategoryResponse.parent(
-                    schoolCategory.getId(),
-                    schoolCategory.getName(),
-                    schoolChildren
-            ));
+            schoolDocuments.stream()
+                    .map(document -> CategoryResponse.parent(
+                            schoolCategory.getId(),
+                            document.getId(),
+                            document.getTitle(),
+                            schoolChildren.stream()
+                                    .map(category -> CategoryResponse.leaf(category.getId(), document.getId(), category.getName()))
+                                    .toList()
+                    ))
+                    .forEach(responses::add);
         }
 
         categories.stream()
                 .filter(category -> !category.getName().equals(CategoryType.SCHOOL.getDisplayName()))
                 .filter(category -> !schoolChildNames.contains(category.getName()))
-                .map(category -> CategoryResponse.leaf(category.getId(), category.getName()))
+                .map(category -> CategoryResponse.leaf(category.getId(), null, category.getName()))
                 .forEach(responses::add);
 
         return responses;

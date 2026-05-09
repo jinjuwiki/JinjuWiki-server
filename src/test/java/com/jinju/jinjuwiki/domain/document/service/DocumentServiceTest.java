@@ -80,6 +80,7 @@ class DocumentServiceTest {
                 "문서 제목",
                 "문서 요약",
                 10L,
+                null,
                 2024,
                 contentJson
         );
@@ -119,6 +120,7 @@ class DocumentServiceTest {
                 "문서 제목",
                 "문서 요약",
                 10L,
+                null,
                 2024,
                 createContentJson()
         );
@@ -192,7 +194,7 @@ class DocumentServiceTest {
                 .thenReturn(pageResponse);
 
         // when
-        PageResponse<DocumentSummaryResponse> response = documentService.getDocuments(30L, 0, 10);
+        PageResponse<DocumentSummaryResponse> response = documentService.getDocuments(30L, null, 0, 10);
 
         // then
         assertThat(response.content()).hasSize(2);
@@ -209,15 +211,17 @@ class DocumentServiceTest {
         Category category = createCategory(40L, "학교");
         Category updatedCategory = createCategory(41L, "선생님");
         Document document = createDocument(400L, "원래 제목", "원래 요약", 2023, author, category);
+        Document schoolDocument = createDocument(401L, "진주고등학교", "학교 요약", 2024, author, category);
         JsonNode updatedContentJson = createContentJson();
         when(documentDomainService.getDocument(400L)).thenReturn(document);
         doNothing().when(documentDomainService).validateAuthor(document, 4L);
         when(categoryRepository.findById(41L)).thenReturn(Optional.of(updatedCategory));
+        when(documentRepository.findById(401L)).thenReturn(Optional.of(schoolDocument));
 
         // when
         DocumentDetailResponse response = documentService.updateDocument(
                 400L,
-                new DocumentUpdateRequest("수정 제목", "수정 요약", 41L, 2024, updatedContentJson),
+                new DocumentUpdateRequest("수정 제목", "수정 요약", 41L, 401L, 2024, updatedContentJson),
                 4L
         );
 
@@ -227,9 +231,12 @@ class DocumentServiceTest {
         assertThat(response.eventYear()).isEqualTo(2024);
         assertThat(response.contentJson()).isEqualTo(updatedContentJson);
         assertThat(response.categoryName()).isEqualTo("선생님");
+        assertThat(response.schoolDocumentId()).isEqualTo(401L);
+        assertThat(response.schoolName()).isEqualTo("진주고등학교");
         verify(documentDomainService).getDocument(400L);
         verify(documentDomainService).validateAuthor(document, 4L);
         verify(categoryRepository).findById(41L);
+        verify(documentRepository).findById(401L);
     }
 
     @Test
@@ -254,7 +261,7 @@ class DocumentServiceTest {
                 BusinessException.class,
                 () -> documentService.updateDocument(
                         500L,
-                        new DocumentUpdateRequest("수정 제목", "수정 요약", 50L, 2024, createContentJson()),
+                        new DocumentUpdateRequest("수정 제목", "수정 요약", 50L, null, 2024, createContentJson()),
                         6L
                 )
         );
@@ -334,7 +341,7 @@ class DocumentServiceTest {
         when(documentRepository.searchByKeyword(eq("공부"), any(Pageable.class))).thenReturn(searchResult);
 
         // when
-        PageResponse<DocumentSummaryResponse> response = documentService.searchDocuments("공부", null, 0, 10);
+        PageResponse<DocumentSummaryResponse> response = documentService.searchDocuments("공부", null, null, 0, 10);
 
         // then
         assertThat(response.content()).hasSize(1);
@@ -359,7 +366,7 @@ class DocumentServiceTest {
                 .thenReturn(searchResult);
 
         // when
-        PageResponse<DocumentSummaryResponse> response = documentService.searchDocuments("시험", 110L, 0, 10);
+        PageResponse<DocumentSummaryResponse> response = documentService.searchDocuments("시험", 110L, null, 0, 10);
 
         // then
         assertThat(response.content()).hasSize(1);
@@ -376,10 +383,29 @@ class DocumentServiceTest {
         // when
         BusinessException exception = assertThrows(
                 BusinessException.class,
-                () -> documentService.searchDocuments(keyword, null, 0, 10)
+                () -> documentService.searchDocuments(keyword, null, null, 0, 10)
         );
 
         // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT);
+    }
+
+    @Test
+    @DisplayName("학교 하위 카테고리 문서는 학교 문서 ID가 필요하다.")
+    void createDocumentFailWhenSchoolDocumentIdMissing() {
+        User author = createUser(12L, "doc12@test.com", "docUser12");
+        Category category = createCategory(120L, "학생");
+        when(userRepository.findById(12L)).thenReturn(Optional.of(author));
+        when(categoryRepository.findById(120L)).thenReturn(Optional.of(category));
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> documentService.createDocument(
+                        new DocumentCreateRequest("학생 문서", "요약", 120L, null, 2024, createContentJson()),
+                        12L
+                )
+        );
+
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT);
     }
 
@@ -422,6 +448,7 @@ class DocumentServiceTest {
                 .contentJson(DocumentContentJsonCodec.writeValue(createContentJson()))
                 .author(author)
                 .category(category)
+                .schoolDocument(null)
                 .build();
         ReflectionTestUtils.setField(document, "id", id);
         return document;
