@@ -3,6 +3,7 @@ package com.jinju.jinjuwiki.domain.search.entity;
 import com.jinju.jinjuwiki.domain.document.entity.Document;
 import com.jinju.jinjuwiki.domain.user.entity.User;
 import com.jinju.jinjuwiki.global.entity.BaseEntity;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -38,5 +39,6 @@ public class DocumentViewLog extends BaseEntity {
     @JoinColumn(name = "fk_user_id")
     private User user;
 
+    @Column(length = 45)
     private String viewerIp;
 }
