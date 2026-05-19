@@ -13,8 +13,3 @@ spring:
   mail:
     host: localhost
     port: 2525
-
-app:
-  upload:
-    image-path: /tmp/jinjuwiki-test-uploads/images
-    image-url-prefix: /uploads/images/
