@@ -83,7 +83,7 @@ public class DocumentServiceImpl implements DocumentService {
             bufferDocumentViewCount(document);
         }
 
-        // 응답 조회수는 Redis 버퍼 반영 예정값이 아니라 현재 영속 상태의 집계값만 노출한다.
+        // 응답 조회수는 Redis 버퍼 반영 예정값이 아니라 현재 영속 상태의 집계값만 노출
         return DocumentDetailResponseMapper.toResponse(document);
     }
 
