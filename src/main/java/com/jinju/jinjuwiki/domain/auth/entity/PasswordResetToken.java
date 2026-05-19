@@ -33,7 +33,7 @@ public class PasswordResetToken extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime expiresAt;
 
-    @Column(length = 100)
+    @Column(unique = true, length = 100)
     private String resetToken;
 
     @Column
