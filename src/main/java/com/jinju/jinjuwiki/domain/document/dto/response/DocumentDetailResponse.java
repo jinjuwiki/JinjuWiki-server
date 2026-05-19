@@ -31,7 +31,7 @@ public record DocumentDetailResponse(
                 example = "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"진주성 전투 본문\"}]}]}"
         )
         JsonNode contentJson,
-        @Schema(description = "문서 조회수", example = "128")
+        @Schema(description = "문서 조회수. Redis 버퍼 반영 예정값이 아닌 집계 완료 기준 값", example = "128")
         Long viewCount,
         @Schema(description = "문서 생성 시각", example = "2026-04-14T10:30:00")
         LocalDateTime createdAt,

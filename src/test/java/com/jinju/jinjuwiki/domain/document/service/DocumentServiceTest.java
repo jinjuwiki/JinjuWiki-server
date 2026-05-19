@@ -138,7 +138,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    @DisplayName("문서를 조회하면 조회수가 증가한다.")
+    @DisplayName("문서를 조회하면 응답 조회수는 현재 집계값을 유지하고 버퍼만 반영한다.")
     void getDocumentSuccess() {
         // given
         Document document = Document.builder()
@@ -161,7 +161,7 @@ class DocumentServiceTest {
 
         // then
         assertThat(response.documentId()).isEqualTo(200L);
-        assertThat(response.viewCount()).isEqualTo(1L);
+        assertThat(response.viewCount()).isEqualTo(0L);
         assertThat(response.title()).isEqualTo("수학 공부법");
         verify(documentDomainService).getDocument(200L);
         verify(documentViewLogService).save(document, 2L, null);
@@ -169,7 +169,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    @DisplayName("조회수 버퍼 반영이 실패해도 문서 상세 조회는 성공한다.")
+    @DisplayName("조회수 버퍼 반영이 실패해도 응답 조회수는 현재 집계값으로 유지된다.")
     void getDocumentSuccessWhenViewCountBufferFails() {
         // given
         Document document = Document.builder()
@@ -192,7 +192,7 @@ class DocumentServiceTest {
 
         // then
         assertThat(response.documentId()).isEqualTo(200L);
-        assertThat(response.viewCount()).isEqualTo(1L);
+        assertThat(response.viewCount()).isEqualTo(0L);
         verify(documentDomainService).getDocument(200L);
         verify(documentViewLogService).save(document, 2L, null);
         verify(redisDocumentViewCountBuffer).increment(200L);
