@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -22,6 +23,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 // 급상승 문서 보안 통합 테스트 클래스
 @SpringBootTest
+@ActiveProfiles("integration")
 class SearchSecurityIntegrationTest {
 
     @Autowired
