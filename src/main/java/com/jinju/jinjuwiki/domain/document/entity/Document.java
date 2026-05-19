@@ -41,7 +41,7 @@ public class Document extends BaseEntity {
     @Column
     private Integer eventYear;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "jsonb")
     private String contentJson;
 
     @Builder.Default
