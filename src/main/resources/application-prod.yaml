@@ -5,6 +5,9 @@ spring:
   docker:
     compose:
       enabled: false
+  flyway:
+    enabled: true
+    validate-on-migrate: true
   jpa:
     hibernate:
       ddl-auto: validate
