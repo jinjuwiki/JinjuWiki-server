@@ -16,19 +16,19 @@ import org.springframework.stereotype.Repository;
 public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     @Override
-    @EntityGraph(attributePaths = {"author", "category", "schoolDocument"})
+    @EntityGraph(value = Document.DOCUMENT_WITH_RELATIONS_GRAPH)
     Optional<Document> findById(Long id);
 
-    @EntityGraph(attributePaths = {"author", "category", "schoolDocument"})
+    @EntityGraph(value = Document.DOCUMENT_WITH_RELATIONS_GRAPH)
     Page<Document> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
-    @EntityGraph(attributePaths = {"author", "category", "schoolDocument"})
+    @EntityGraph(value = Document.DOCUMENT_WITH_RELATIONS_GRAPH)
     Page<Document> findByCategoryIdOrderByCreatedAtDesc(Long categoryId, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"author", "category", "schoolDocument"})
+    @EntityGraph(value = Document.DOCUMENT_WITH_RELATIONS_GRAPH)
     Page<Document> findBySchoolDocumentIdOrderByCreatedAtDesc(Long schoolDocumentId, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"author", "category", "schoolDocument"})
+    @EntityGraph(value = Document.DOCUMENT_WITH_RELATIONS_GRAPH)
     Page<Document> findByCategoryIdAndSchoolDocumentIdOrderByCreatedAtDesc(Long categoryId, Long schoolDocumentId, Pageable pageable);
 
     List<Document> findByCategoryIdOrderByTitleAsc(Long categoryId);
@@ -54,7 +54,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     int incrementViewCountBy(@Param("documentId") Long documentId, @Param("delta") long delta);
 
     // concat() : 두개 이상의 컬럼이나 문자열을 순서대로 묶어 하나의 문자열로 반환
-    @EntityGraph(attributePaths = {"author", "category", "schoolDocument"})
+    @EntityGraph(value = Document.DOCUMENT_WITH_RELATIONS_GRAPH)
     @Query("""
             select d
             from Document d
@@ -67,7 +67,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             Pageable pageable
     );
 
-    @EntityGraph(attributePaths = {"author", "category", "schoolDocument"})
+    @EntityGraph(value = Document.DOCUMENT_WITH_RELATIONS_GRAPH)
     @Query("""
             select d
             from Document d
@@ -84,7 +84,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             Pageable pageable
     );
 
-    @EntityGraph(attributePaths = {"author", "category", "schoolDocument"})
+    @EntityGraph(value = Document.DOCUMENT_WITH_RELATIONS_GRAPH)
     @Query("""
             select d
             from Document d
@@ -101,7 +101,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             Pageable pageable
     );
 
-    @EntityGraph(attributePaths = {"author", "category", "schoolDocument"})
+    @EntityGraph(value = Document.DOCUMENT_WITH_RELATIONS_GRAPH)
     @Query("""
             select d
             from Document d
