@@ -11,6 +11,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.NamedAttributeNode;
+import jakarta.persistence.NamedEntityGraph;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import lombok.AccessLevel;
@@ -22,10 +24,20 @@ import lombok.NoArgsConstructor;
 // JPA 표준 패턴 기반 문서 Entity 클래스
 @Getter
 @Entity
+@NamedEntityGraph(
+        name = Document.DOCUMENT_WITH_RELATIONS_GRAPH,
+        attributeNodes = {
+                @NamedAttributeNode("author"),
+                @NamedAttributeNode("category"),
+                @NamedAttributeNode("schoolDocument")
+        }
+)
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Document extends BaseEntity {
+
+    public static final String DOCUMENT_WITH_RELATIONS_GRAPH = "Document.withRelations";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

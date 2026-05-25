@@ -12,11 +12,14 @@ import com.jinju.jinjuwiki.domain.user.entity.UserRole;
 import com.jinju.jinjuwiki.domain.user.repository.UserRepository;
 import com.jinju.jinjuwiki.global.config.JpaAuditingConfig;
 import jakarta.persistence.EntityManager;
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 // 문서 저장소 원자 증가 쿼리 테스트 클래스
 @DataJpaTest
@@ -79,20 +82,92 @@ class DocumentRepositoryTest {
         assertThat(reloadedDocument.getViewCount()).isEqualTo(5L);
     }
 
+    @Test
+    @DisplayName("문서 단건 조회는 응답 조립에 필요한 연관 엔티티를 함께 로드한다.")
+    void findByIdLoadsRequiredAssociations() {
+        User author = userRepository.save(createUser("detail@test.com", "detailUser"));
+        Category schoolCategory = categoryRepository.save(createCategory("학교"));
+        Category childCategory = categoryRepository.save(createCategory("학생"));
+        Document schoolDocument = documentRepository.saveAndFlush(createDocument("진주고등학교", author, schoolCategory, null));
+        Document savedDocument = documentRepository.saveAndFlush(createDocument("학생 문서", author, childCategory, schoolDocument));
+
+        entityManager.clear();
+
+        Document foundDocument = documentRepository.findById(savedDocument.getId()).orElseThrow();
+
+        assertThat(Hibernate.isInitialized(foundDocument.getAuthor())).isTrue();
+        assertThat(Hibernate.isInitialized(foundDocument.getCategory())).isTrue();
+        assertThat(Hibernate.isInitialized(foundDocument.getSchoolDocument())).isTrue();
+    }
+
+    @Test
+    @DisplayName("문서 목록 조회는 DTO 매핑에 필요한 연관 엔티티를 함께 로드한다.")
+    void findByCategoryIdOrderByCreatedAtDescLoadsRequiredAssociations() {
+        User author = userRepository.save(createUser("list@test.com", "listUser"));
+        Category schoolCategory = categoryRepository.save(createCategory("학교"));
+        Category childCategory = categoryRepository.save(createCategory("학생"));
+        Document schoolDocument = documentRepository.saveAndFlush(createDocument("진주여고", author, schoolCategory, null));
+        documentRepository.saveAndFlush(createDocument("학생 문서 1", author, childCategory, schoolDocument));
+        documentRepository.saveAndFlush(createDocument("학생 문서 2", author, childCategory, schoolDocument));
+
+        entityManager.clear();
+
+        Page<Document> documents = documentRepository.findByCategoryIdOrderByCreatedAtDesc(
+                childCategory.getId(),
+                PageRequest.of(0, 10)
+        );
+
+        assertThat(documents.getContent()).hasSize(2);
+        assertThat(documents.getContent())
+                .allSatisfy(document -> {
+                    assertThat(Hibernate.isInitialized(document.getAuthor())).isTrue();
+                    assertThat(Hibernate.isInitialized(document.getCategory())).isTrue();
+                    assertThat(Hibernate.isInitialized(document.getSchoolDocument())).isTrue();
+                });
+    }
+
+    @Test
+    @DisplayName("문서 검색 조회는 DTO 매핑에 필요한 연관 엔티티를 함께 로드한다.")
+    void searchByKeywordLoadsRequiredAssociations() {
+        User author = userRepository.save(createUser("search@test.com", "searchUser"));
+        Category schoolCategory = categoryRepository.save(createCategory("학교"));
+        Category childCategory = categoryRepository.save(createCategory("사건사고"));
+        Document schoolDocument = documentRepository.saveAndFlush(createDocument("진주중앙고", author, schoolCategory, null));
+        documentRepository.saveAndFlush(createDocument("축제 사고 문서", author, childCategory, schoolDocument));
+
+        entityManager.clear();
+
+        Page<Document> documents = documentRepository.searchByKeyword("사고", PageRequest.of(0, 10));
+
+        assertThat(documents.getContent()).hasSize(1);
+        Document foundDocument = documents.getContent().getFirst();
+        assertThat(Hibernate.isInitialized(foundDocument.getAuthor())).isTrue();
+        assertThat(Hibernate.isInitialized(foundDocument.getCategory())).isTrue();
+        assertThat(Hibernate.isInitialized(foundDocument.getSchoolDocument())).isTrue();
+    }
+
     // 테스트용 사용자 생성 메서드
     private User createUser() {
+        return createUser("view-count@test.com", "viewCounter");
+    }
+
+    private User createUser(String email, String nickname) {
         return User.builder()
-                .email("view-count@test.com")
+                .email(email)
                 .password("encoded-password")
-                .nickname("viewCounter")
+                .nickname(nickname)
                 .role(UserRole.USER)
                 .build();
     }
 
     // 테스트용 카테고리 생성 메서드
     private Category createCategory() {
+        return createCategory("조회수");
+    }
+
+    private Category createCategory(String name) {
         return Category.builder()
-                .name("조회수")
+                .name(name)
                 .build();
     }
 
@@ -132,18 +207,23 @@ class DocumentRepositoryTest {
 
     // delta 테스트용 문서 생성 메서드
     private Document createDeltaDocument(User author, Category category) {
+        return createDocument("조회수 delta 테스트 문서", author, category, null);
+    }
+
+    private Document createDocument(String title, User author, Category category, Document schoolDocument) {
         ObjectNode contentJson = OBJECT_MAPPER.createObjectNode();
         contentJson.put("type", "doc");
         contentJson.putArray("content");
 
         return Document.builder()
-                .title("조회수 delta 테스트 문서")
+                .title(title)
                 .content(contentJson.toString())
                 .summary("조회수 delta 테스트 요약")
                 .eventYear(2026)
                 .contentJson(contentJson.toString())
                 .author(author)
                 .category(category)
+                .schoolDocument(schoolDocument)
                 .build();
     }
 }
